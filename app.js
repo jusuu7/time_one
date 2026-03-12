@@ -1373,6 +1373,7 @@ function normalizeTimeString(timeStr) {
   if (!timeStr) return "";
   let raw = String(timeStr).trim();
   raw = raw.replace(/：/g, ":");
+  raw = raw.replace(/^:+/, "");
   if (/^:\d{2}:\d{2}$/.test(raw)) {
     raw = raw.slice(1);
   }
@@ -1380,44 +1381,136 @@ function normalizeTimeString(timeStr) {
     const parts = raw.split(":");
     raw = `${parts[0]}:${parts[1]}`;
   }
-  return raw;
+  const match = raw.match(/^(\d{1,2}):(\d{1,2})$/);
+  if (!match) return "";
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return "";
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return "";
+  return `${pad(hour)}:${pad(minute)}`;
 }
 
-function normalizeImportedEntry(item) {
-  if (!item) return null;
-  const activity = String(item.activity || item.content || "").trim();
-  const start = normalizeTimeString(item.start || item.start_time || "");
-  const end = normalizeTimeString(item.end || item.end_time || "");
-  const date =
+function addDaysToDateString(dateStr, days) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const next = new Date(y, m - 1, d + days);
+  return `${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}`;
+}
+
+function parseDateTimeTokenFromImport(token, fallbackDate) {
+  if (!token) return null;
+  let raw = String(token).trim();
+  let hasDate = false;
+  let date = fallbackDate || todayString();
+  const now = new Date();
+  const md = raw.match(/^(\d{1,2})\s*月\s*(\d{1,2})\s*号?\s*(.*)$/);
+  if (md) {
+    const month = Number(md[1]);
+    const day = Number(md[2]);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      date = `${now.getFullYear()}-${pad(month)}-${pad(day)}`;
+      hasDate = true;
+      raw = md[3] || "";
+    }
+  }
+  const time = normalizeTimeString(raw);
+  if (!time) return null;
+  return { date, time, hasDate };
+}
+
+function parseImportedTimeRange(timeText, fallbackDate) {
+  if (!timeText) return null;
+  const normalized = String(timeText)
+    .replace(/[～~\-－—–至]/g, "到")
+    .replace(/\s+/g, "")
+    .trim();
+  const parts = normalized.split("到");
+  if (parts.length < 2) return null;
+  const startToken = parts[0];
+  const endToken = parts.slice(1).join("到");
+  const startParsed = parseDateTimeTokenFromImport(startToken, fallbackDate);
+  if (!startParsed) return null;
+  const endParsed = parseDateTimeTokenFromImport(endToken, startParsed.date);
+  if (!endParsed) return null;
+
+  let endDate = endParsed.date;
+  if (!endParsed.hasDate && timeToMinutes(endParsed.time) < timeToMinutes(startParsed.time)) {
+    endDate = addDaysToDateString(startParsed.date, 1);
+  }
+
+  return {
+    start: startParsed.time,
+    end: endParsed.time,
+    startDate: startParsed.date,
+    endDate,
+    nextContextDate: endDate,
+  };
+}
+
+function normalizeImportedEntry(item, contextDate) {
+  if (!item || typeof item !== "object") {
+    return { entry: null, nextContextDate: contextDate };
+  }
+
+  const parsedItemDate =
     parseChineseDate(item.date) ||
     parseChineseDate(item.day) ||
     parseChineseDate(item.date_str) ||
+    contextDate ||
     todayString();
-  const joy = Number(item.joy ?? item.happy ?? item.happiness);
+
+  let start = normalizeTimeString(item.start || item.start_time || "");
+  let end = normalizeTimeString(item.end || item.end_time || "");
+  let startDateStr = parsedItemDate;
+  let endDateStr = parsedItemDate;
+  let nextContextDate = contextDate || parsedItemDate;
+
+  if ((!start || !end) && item.time) {
+    const parsedRange = parseImportedTimeRange(item.time, parsedItemDate);
+    if (parsedRange) {
+      start = parsedRange.start;
+      end = parsedRange.end;
+      startDateStr = parsedRange.startDate;
+      endDateStr = parsedRange.endDate;
+      nextContextDate = parsedRange.nextContextDate;
+    }
+  }
+
+  const activity = String(item.activity || item.content || item.event || "").trim();
+  const joyRaw =
+    item.joy ?? item.happy ?? item.happiness ?? item.快乐 ?? item["快乐"];
   const meaningRaw =
     item.meaning ??
     item.value ??
+    item.long_term_value ??
+    item.longTermValue ??
+    item.longtermvalue ??
     item.achievement ??
     item.成就 ??
     item["成就"] ??
     item.价值 ??
     item["价值"];
+  const joy = Number(joyRaw);
   const meaning = Number(meaningRaw);
+
   if (!activity || !start || !end || !Number.isFinite(joy) || !Number.isFinite(meaning)) {
-    return null;
+    return { entry: null, nextContextDate };
   }
+
   const durationMin = computeDuration(start, end);
-  if (!durationMin || durationMin <= 0) return null;
+  if (!durationMin || durationMin <= 0) {
+    return { entry: null, nextContextDate };
+  }
 
-  const startDate = buildDateTime(date, start);
-  const endDate =
-    timeToMinutes(end) >= timeToMinutes(start)
-      ? buildDateTime(date, end)
-      : buildDateTime(date, end, 1);
+  const startDate = buildDateTime(startDateStr, start);
+  let endDate = buildDateTime(endDateStr, end);
+  if (endDate.getTime() <= startDate.getTime()) {
+    endDate = buildDateTime(endDateStr, end, 1);
+    endDateStr = addDaysToDateString(endDateStr, 1);
+  }
 
-  return {
+  const entry = {
     id: item.id || generateId(),
-    date,
+    date: startDateStr,
     start,
     end,
     activity,
@@ -1429,6 +1522,50 @@ function normalizeImportedEntry(item) {
     endTs: item.endTs || endDate.getTime(),
     updatedAt: Date.now(),
   };
+
+  return {
+    entry,
+    nextContextDate: endDateStr || startDateStr || nextContextDate,
+  };
+}
+
+function extractImportItems(parsed) {
+  if (Array.isArray(parsed)) return parsed;
+  if (!parsed || typeof parsed !== "object") return null;
+  const candidates = [parsed.records, parsed.entries, parsed.data, parsed.items, parsed.list];
+  for (const item of candidates) {
+    if (Array.isArray(item)) return item;
+  }
+  return null;
+}
+
+function normalizeImportedEntries(items) {
+  const normalized = [];
+  let contextDate = todayString();
+  let skipped = 0;
+  items.forEach((item) => {
+    const result = normalizeImportedEntry(item, contextDate);
+    if (result?.entry) {
+      normalized.push(result.entry);
+    } else {
+      skipped += 1;
+    }
+    if (result?.nextContextDate) {
+      contextDate = result.nextContextDate;
+    }
+  });
+  return { normalized, skipped };
+}
+
+function sortEntriesByStart(entriesList) {
+  return [...entriesList].sort((a, b) => a.startTs - b.startTs);
+}
+
+function normalizeImportedPayload(parsed) {
+  const items = extractImportItems(parsed);
+  if (!items) return { normalized: [], skipped: 0 };
+  const { normalized, skipped } = normalizeImportedEntries(items);
+  return { normalized: sortEntriesByStart(normalized), skipped };
 }
 
 importFile.addEventListener("change", (event) => {
@@ -1438,9 +1575,7 @@ importFile.addEventListener("change", (event) => {
   reader.onload = () => {
     try {
       const parsed = JSON.parse(String(reader.result || "[]"));
-      if (!Array.isArray(parsed)) throw new Error("Invalid JSON");
-
-      const normalized = parsed.map(normalizeImportedEntry).filter(Boolean);
+      const { normalized, skipped } = normalizeImportedPayload(parsed);
 
       if (!normalized.length) {
         alert("导入失败：没有可用记录。");
@@ -1466,7 +1601,8 @@ importFile.addEventListener("change", (event) => {
       saveEntries();
       renderEntries();
       renderSummary();
-      alert("导入完成。");
+      const total = normalized.length + skipped;
+      alert(`导入完成：成功 ${normalized.length} 条，跳过 ${skipped} 条（共 ${total} 条）。`);
     } catch (err) {
       alert("导入失败：文件格式不正确。");
     } finally {
