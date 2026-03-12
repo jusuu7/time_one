@@ -566,7 +566,7 @@ button:hover {
 }
 
 .site-footer button {
-  width: 100%;
+  width: auto;
 }
 
 .site-footer button,
@@ -638,7 +638,7 @@ button:hover {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding: 10px 4vw calc(10px + env(safe-area-inset-bottom));
+    padding: 16px 4vw calc(10px + env(safe-area-inset-bottom));
     overflow: visible;
   }
 
