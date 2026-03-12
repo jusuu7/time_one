@@ -528,7 +528,7 @@ button:hover {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    overflow: hidden;
+    overflow-y: auto;
   }
 
   .bg-shapes {
@@ -563,7 +563,7 @@ button:hover {
     flex-direction: column;
     gap: 8px;
     padding: 0 4vw calc(10px + env(safe-area-inset-bottom));
-    overflow: hidden;
+    overflow: visible;
   }
 
   .card {
@@ -592,7 +592,7 @@ button:hover {
 
   textarea {
     min-height: 34px;
-    font-size: 13px;
+    font-size: 16px;
   }
 
   .recommend-card .card-title p {
@@ -608,20 +608,8 @@ button:hover {
     display: none;
   }
 
-  .list-card {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-  }
-
   .list-card .card-title {
     margin-bottom: 6px;
-  }
-
-  .entries-list {
-    flex: 1;
-    overflow-y: auto;
   }
 
   .entry-item {
