@@ -957,6 +957,86 @@ importBtn.addEventListener("click", () => {
   if (importFile) importFile.click();
 });
 
+function parseChineseDate(dateStr) {
+  const raw = String(dateStr || "").trim();
+  if (!raw) return null;
+  const now = new Date();
+  const year = now.getFullYear();
+  const match = raw.match(/(\d{1,2})\s*月\s*(\d{1,2})\s*号?/);
+  if (match) {
+    const month = Number(match[1]);
+    const day = Number(match[2]);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      return `${year}-${pad(month)}-${pad(day)}`;
+    }
+  }
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(raw)) {
+    const [y, m, d] = raw.split("-").map(Number);
+    return `${y}-${pad(m)}-${pad(d)}`;
+  }
+  if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(raw)) {
+    const [y, m, d] = raw.split("/").map(Number);
+    return `${y}-${pad(m)}-${pad(d)}`;
+  }
+  return null;
+}
+
+function normalizeTimeString(timeStr) {
+  if (!timeStr) return "";
+  let raw = String(timeStr).trim();
+  raw = raw.replace(/：/g, ":");
+  if (/^:\d{2}:\d{2}$/.test(raw)) {
+    raw = raw.slice(1);
+  }
+  if (/^\d{1,2}:\d{2}:\d{2}$/.test(raw)) {
+    const parts = raw.split(":");
+    raw = `${parts[0]}:${parts[1]}`;
+  }
+  return raw;
+}
+
+function normalizeImportedEntry(item) {
+  if (!item) return null;
+  const activity = String(item.activity || item.content || "").trim();
+  const start = normalizeTimeString(item.start || item.start_time || "");
+  const end = normalizeTimeString(item.end || item.end_time || "");
+  const date =
+    parseChineseDate(item.date) ||
+    parseChineseDate(item.day) ||
+    parseChineseDate(item.date_str) ||
+    todayString();
+  const joy = Number(item.joy ?? item.happy ?? item.happiness);
+  const meaningRaw =
+    item.meaning ?? item.achievement ?? item.成就 ?? item["成就"];
+  const meaning = Number(meaningRaw);
+  if (!activity || !start || !end || !Number.isFinite(joy) || !Number.isFinite(meaning)) {
+    return null;
+  }
+  const durationMin = computeDuration(start, end);
+  if (!durationMin || durationMin <= 0) return null;
+
+  const startDate = buildDateTime(date, start);
+  const endDate =
+    timeToMinutes(end) >= timeToMinutes(start)
+      ? buildDateTime(date, end)
+      : buildDateTime(date, end, 1);
+
+  return {
+    id: item.id || generateId(),
+    date,
+    start,
+    end,
+    activity,
+    category: inferCategory(activity) || item.category || "其他",
+    joy,
+    meaning,
+    durationMin,
+    startTs: item.startTs || startDate.getTime(),
+    endTs: item.endTs || endDate.getTime(),
+    updatedAt: Date.now(),
+  };
+}
+
 importFile.addEventListener("change", (event) => {
   const file = event.target.files?.[0];
   if (!file) return;
@@ -966,45 +1046,7 @@ importFile.addEventListener("change", (event) => {
       const parsed = JSON.parse(String(reader.result || "[]"));
       if (!Array.isArray(parsed)) throw new Error("Invalid JSON");
 
-      const normalized = parsed
-        .map((item) => {
-          if (!item) return null;
-          const activity = String(item.activity || "").trim();
-          const start = String(item.start || "").trim();
-          const end = String(item.end || "").trim();
-          const date = String(item.date || "").trim() || todayString();
-          const joy = Number(item.joy ?? item.happy ?? item.happiness);
-          const meaningRaw =
-            item.meaning ?? item.achievement ?? item.成就 ?? item["成就"];
-          const meaning = Number(meaningRaw);
-          if (!activity || !start || !end || !Number.isFinite(joy) || !Number.isFinite(meaning)) {
-            return null;
-          }
-          const durationMin = computeDuration(start, end);
-          if (!durationMin || durationMin <= 0) return null;
-
-          const startDate = buildDateTime(date, start);
-          const endDate =
-            timeToMinutes(end) >= timeToMinutes(start)
-              ? buildDateTime(date, end)
-              : buildDateTime(date, end, 1);
-
-          return {
-            id: item.id || generateId(),
-            date,
-            start,
-            end,
-            activity,
-            category: inferCategory(activity) || item.category || "其他",
-            joy,
-            meaning,
-            durationMin,
-            startTs: item.startTs || startDate.getTime(),
-            endTs: item.endTs || endDate.getTime(),
-            updatedAt: Date.now(),
-          };
-        })
-        .filter(Boolean);
+      const normalized = parsed.map(normalizeImportedEntry).filter(Boolean);
 
       if (!normalized.length) {
         alert("导入失败：没有可用记录。");
