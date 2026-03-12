@@ -12,6 +12,8 @@ const chartDateInput = document.getElementById("chartDate");
 const chartCanvas = document.getElementById("chartCanvas");
 const chartLegend = document.getElementById("chartLegend");
 const chartSummary = document.getElementById("chartSummary");
+const listToggleBtn = document.getElementById("listToggleBtn");
+const listCard = document.querySelector(".list-card");
 const categoryBtn = document.getElementById("categoryBtn");
 const categoryModal = document.getElementById("categoryModal");
 const closeCategoryModal = document.getElementById("closeCategoryModal");
@@ -29,6 +31,10 @@ const clearBtn = document.getElementById("clearBtn");
 
 let entries = [];
 let editingId = null;
+let listCollapsed = false;
+
+const MAX_ENTRIES_DISPLAY = 20;
+const LIST_COLLAPSE_KEY = "time_log_list_collapsed_v1";
 
 const RULES_KEY = "time_log_category_rules_v1";
 
@@ -434,6 +440,11 @@ function makeSummary(entries7) {
 }
 
 function groupByActivity(allEntries) {
+  return groupByActivityWeighted(allEntries, []);
+}
+
+function groupByActivityWeighted(allEntries, recentEntries) {
+  const recentIds = new Set((recentEntries || []).map((entry) => entry.id));
   const map = new Map();
   allEntries.forEach((entry) => {
     const category = getEntryCategory(entry);
@@ -446,14 +457,17 @@ function groupByActivity(allEntries) {
         totalMeaning: 0,
         totalDuration: 0,
         count: 0,
+        recentCount: 0,
         lastTime: 0,
       });
     }
     const item = map.get(key);
-    item.totalJoy += entry.joy;
-    item.totalMeaning += entry.meaning;
-    item.totalDuration += entry.durationMin;
-    item.count += 1;
+    const weight = recentIds.has(entry.id) ? 2 : 1;
+    item.totalJoy += entry.joy * weight;
+    item.totalMeaning += entry.meaning * weight;
+    item.totalDuration += entry.durationMin * weight;
+    item.count += weight;
+    if (recentIds.has(entry.id)) item.recentCount += 1;
     item.lastTime = Math.max(item.lastTime, entry.endTs);
   });
   return Array.from(map.values()).map((item) => ({
@@ -464,7 +478,8 @@ function groupByActivity(allEntries) {
     score:
       (item.totalJoy / item.count) * 0.6 +
       (item.totalMeaning / item.count) * 0.4 +
-      Math.min(item.count / 5, 1) * 0.3,
+      Math.min(item.count / 5, 1) * 0.3 +
+      Math.min(item.recentCount / 3, 1) * 0.4,
   }));
 }
 
@@ -483,7 +498,7 @@ function buildRecommendations(allEntries, entries7) {
   const avgMeaning7 =
     entries7.reduce((sum, e) => sum + e.meaning, 0) / (entries7.length || 1);
 
-  const groups = groupByActivity(allEntries);
+  const groups = groupByActivityWeighted(allEntries, entries7);
   const now = Date.now();
   const recentLimit = now - 4 * 60 * 60 * 1000;
 
@@ -509,7 +524,7 @@ function buildRecommendations(allEntries, entries7) {
     const topJoy = pick(sortedByJoy);
     if (topJoy) {
       recommendations.push({
-        title: `补一点快乐：${topJoy.activity}`,
+        title: `补充快乐：${topJoy.activity}`,
         detail: `${compareHint} 历史平均快乐 ${topJoy.avgJoy.toFixed(
           1
         )}，建议时长约 ${Math.round(topJoy.avgDuration)} 分钟。`,
@@ -529,7 +544,7 @@ function buildRecommendations(allEntries, entries7) {
     const topJoy = pick(sortedByJoy);
     if (topJoy) {
       recommendations.push({
-        title: `补一点快乐：${topJoy.activity}`,
+        title: `补充快乐：${topJoy.activity}`,
         detail: `${compareHint} 历史平均快乐 ${topJoy.avgJoy.toFixed(
           1
         )}，建议时长约 ${Math.round(topJoy.avgDuration)} 分钟。`,
@@ -745,7 +760,7 @@ function renderEntries() {
   }
 
   const sorted = [...entries].sort((a, b) => b.startTs - a.startTs);
-  sorted.forEach((entry) => {
+  sorted.slice(0, MAX_ENTRIES_DISPLAY).forEach((entry) => {
     const category = getEntryCategory(entry);
     const item = document.createElement("div");
     item.className = "entry-item";
@@ -1095,8 +1110,24 @@ function init() {
   chartDateInput.value = todayString();
   loadCategoryRules();
   loadEntries();
+  listCollapsed = localStorage.getItem(LIST_COLLAPSE_KEY) === "1";
+  applyListCollapse();
   renderEntries();
   renderSummary();
 }
 
 init();
+
+function applyListCollapse() {
+  if (!listCard || !listToggleBtn) return;
+  listCard.classList.toggle("list-collapsed", listCollapsed);
+  listToggleBtn.textContent = listCollapsed ? "展开" : "收起";
+}
+
+if (listToggleBtn) {
+  listToggleBtn.addEventListener("click", () => {
+    listCollapsed = !listCollapsed;
+    localStorage.setItem(LIST_COLLAPSE_KEY, listCollapsed ? "1" : "0");
+    applyListCollapse();
+  });
+}

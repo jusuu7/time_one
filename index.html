@@ -51,7 +51,7 @@
 
         <section class="card recommend-card" data-section="recommend">
           <div class="card-title">
-            <h2>下一步推荐</h2>
+            <h2>推荐活动</h2>
             <p>保存记录后自动刷新。</p>
           </div>
           <div id="recommendationBox" class="recommendation-box"></div>
@@ -81,9 +81,12 @@
         </section>
 
         <section class="card list-card" data-section="list">
-          <div class="card-title">
-            <h2>记录列表</h2>
-            <p>按时间倒序排列，可编辑或删除。</p>
+          <div class="card-title card-title-row">
+            <div>
+              <h2>记录列表</h2>
+              <p>按时间倒序排列，可编辑或删除。</p>
+            </div>
+            <button id="listToggleBtn" class="ghost">收起</button>
           </div>
           <div id="entriesList" class="entries-list"></div>
         </section>
