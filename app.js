@@ -1,4 +1,4 @@
-﻿const STORAGE_KEY = "time_log_entries_v1";
+const STORAGE_KEY = "time_log_entries_v1";
 
 const voiceText = document.getElementById("voiceText");
 const parseBtn = document.getElementById("parseBtn");
@@ -8,10 +8,9 @@ const recommendationBox = document.getElementById("recommendationBox");
 const currentJoyEl = document.getElementById("currentJoy");
 const currentAchievementEl = document.getElementById("currentAchievement");
 const currentHintEl = document.getElementById("currentHint");
-const chartDateInput = document.getElementById("chartDate");
-const chartCanvas = document.getElementById("chartCanvas");
-const chartLegend = document.getElementById("chartLegend");
-const chartSummary = document.getElementById("chartSummary");
+const recentChartCanvas = document.getElementById("recentChartCanvas");
+const recentChartLegend = document.getElementById("recentChartLegend");
+const recentChartSummary = document.getElementById("recentChartSummary");
 const listToggleBtn = document.getElementById("listToggleBtn");
 const listCard = document.querySelector(".list-card");
 const categoryBtn = document.getElementById("categoryBtn");
@@ -676,7 +675,7 @@ function renderSummary() {
   });
 
   renderCurrentStats();
-  renderDailyChart();
+  renderRecent24CategoryChart();
 }
 
 function renderCurrentStats() {
@@ -730,43 +729,54 @@ function buildComparisonHint(recent24, prev24, deltaJoy, deltaAchievement) {
   return `较昨日同时间：${joyLabel}，${achLabel}。`;
 }
 
-function renderDailyChart() {
-  if (!chartCanvas) return;
-  const dateStr = chartDateInput.value || todayString();
-  chartDateInput.value = dateStr;
-
-  const dailyEntries = entries.filter((entry) => entry.date === dateStr);
+function getRecentCategoryTotals(hours = 24) {
+  const now = Date.now();
+  const start = now - hours * 60 * 60 * 1000;
   const totals = {};
-  dailyEntries.forEach((entry) => {
+
+  entries.forEach((entry) => {
+    const overlapStart = Math.max(start, Number(entry.startTs || 0));
+    const overlapEnd = Math.min(now, Number(entry.endTs || 0));
+    if (overlapEnd <= overlapStart) return;
+    const overlapMinutes = Math.round((overlapEnd - overlapStart) / 60000);
+    if (overlapMinutes <= 0) return;
     const category = getEntryCategory(entry);
-    totals[category] = (totals[category] || 0) + entry.durationMin;
+    totals[category] = (totals[category] || 0) + overlapMinutes;
   });
 
-  const totalMinutes = Object.values(totals).reduce((sum, v) => sum + v, 0);
-  chartSummary.textContent = totalMinutes
-    ? `共 ${totalMinutes} 分钟`
-    : "当天暂无记录";
+  return totals;
+}
 
-  const ctx = chartCanvas.getContext("2d");
-  const rect = chartCanvas.getBoundingClientRect();
-  const size = Math.min(rect.width || 240, rect.height || 240);
+function renderRecent24CategoryChart() {
+  if (!recentChartCanvas || !recentChartLegend || !recentChartSummary) return;
+  const totals = getRecentCategoryTotals(24);
+  const totalMinutes = Object.values(totals).reduce((sum, value) => sum + value, 0);
+  recentChartSummary.textContent = totalMinutes
+    ? `最近24小时共 ${totalMinutes} 分钟`
+    : "最近24小时暂无记录";
+
+  const ctx = recentChartCanvas.getContext("2d");
+  if (!ctx) return;
+
+  const rect = recentChartCanvas.getBoundingClientRect();
+  const size = Math.min(rect.width || 220, rect.height || 220);
   const ratio = window.devicePixelRatio || 1;
-  chartCanvas.width = size * ratio;
-  chartCanvas.height = size * ratio;
+  recentChartCanvas.width = size * ratio;
+  recentChartCanvas.height = size * ratio;
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   ctx.clearRect(0, 0, size, size);
 
   if (!totalMinutes) {
-    ctx.fillStyle = "#6d6259";
-    ctx.font = "14px 'Noto Sans SC', sans-serif";
+    ctx.fillStyle = "#8e6a5a";
+    ctx.font = "13px 'Noto Sans SC', sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("暂无数据", size / 2, size / 2);
-    chartLegend.innerHTML = "";
+    ctx.fillText("等待记录", size / 2, size / 2);
+    recentChartLegend.innerHTML = "";
     return;
   }
 
-  const entriesListSorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+  const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
   const center = size / 2;
   const outer = size * 0.45;
   const thickness = size * 0.18;
@@ -775,8 +785,7 @@ function renderDailyChart() {
 
   ctx.lineCap = "butt";
   ctx.lineWidth = thickness;
-
-  entriesListSorted.forEach(([category, minutes]) => {
+  sorted.forEach(([category, minutes]) => {
     const angle = (minutes / totalMinutes) * Math.PI * 2;
     ctx.beginPath();
     ctx.strokeStyle = colorForCategory(category);
@@ -785,17 +794,17 @@ function renderDailyChart() {
     startAngle += angle;
   });
 
-  ctx.fillStyle = "#1f1b16";
+  ctx.fillStyle = "#3d2d27";
   ctx.font = "600 18px 'Noto Sans SC', sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(`${(totalMinutes / 60).toFixed(1)}h`, center, center - 6);
-  ctx.fillStyle = "#6d6259";
+  ctx.fillText(`${Math.round(totalMinutes / 60)}h`, center, center - 6);
+  ctx.fillStyle = "#8e6a5a";
   ctx.font = "12px 'Noto Sans SC', sans-serif";
-  ctx.fillText("总时长", center, center + 12);
+  ctx.fillText("近24小时", center, center + 12);
 
-  chartLegend.innerHTML = "";
-  entriesListSorted.forEach(([category, minutes]) => {
+  recentChartLegend.innerHTML = "";
+  sorted.forEach(([category, minutes]) => {
     const percent = Math.round((minutes / totalMinutes) * 100);
     const item = document.createElement("div");
     item.className = "legend-item";
@@ -806,7 +815,7 @@ function renderDailyChart() {
       </div>
       <span>${minutes} 分钟 · ${percent}%</span>
     `;
-    chartLegend.appendChild(item);
+    recentChartLegend.appendChild(item);
   });
 }
 
@@ -930,10 +939,6 @@ entriesList.addEventListener("click", (event) => {
 
 parseBtn.addEventListener("click", () => {
   handleParseAndSave();
-});
-
-chartDateInput.addEventListener("change", () => {
-  renderDailyChart();
 });
 
 categoryBtn.addEventListener("click", () => {
@@ -1168,7 +1173,6 @@ clearBtn.addEventListener("click", () => {
 });
 
 function init() {
-  chartDateInput.value = todayString();
   loadCategoryRules();
   loadEntries();
   listCollapsed = localStorage.getItem(LIST_COLLAPSE_KEY) === "1";
@@ -1192,3 +1196,11 @@ if (listToggleBtn) {
     applyListCollapse();
   });
 }
+
+let recentChartResizeTimer = null;
+window.addEventListener("resize", () => {
+  if (recentChartResizeTimer) clearTimeout(recentChartResizeTimer);
+  recentChartResizeTimer = setTimeout(() => {
+    renderRecent24CategoryChart();
+  }, 120);
+});

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>记住你的快乐</title>
-    <link rel="stylesheet" href="styles.css?v=20260312" />
+    <link rel="stylesheet" href="styles.css?v=20260312-3" />
   </head>
   <body>
     <div class="bg-shapes" aria-hidden="true">
@@ -33,7 +33,7 @@
 
         <section class="card current-card" data-section="current">
           <div class="card-title">
-            <h2>当前状态</h2>
+            <h2><span class="section-icon icon-current" aria-hidden="true"></span>当前状态</h2>
             <p>最近 24 小时累积</p>
           </div>
           <div class="current-grid">
@@ -51,39 +51,35 @@
 
         <section class="card recommend-card" data-section="recommend">
           <div class="card-title">
-            <h2>推荐活动</h2>
+            <h2><span class="section-icon icon-recommend" aria-hidden="true"></span>推荐活动</h2>
             <p>保存记录后自动刷新。</p>
           </div>
           <div id="recommendationBox" class="recommendation-box"></div>
         </section>
 
+        <section class="card trend-card" data-section="trend">
+          <div class="card-title">
+            <h2><span class="section-icon icon-trend" aria-hidden="true"></span>最近24小时类别占比</h2>
+            <p id="recentChartSummary">最近24小时暂无记录。</p>
+          </div>
+          <div class="trend-wrap">
+            <canvas id="recentChartCanvas" width="220" height="220"></canvas>
+            <div id="recentChartLegend" class="chart-legend compact"></div>
+          </div>
+        </section>
+
         <section class="card summary-card" data-section="summary">
           <div class="card-title">
-            <h2>AI 总结</h2>
+            <h2><span class="section-icon icon-summary" aria-hidden="true"></span>AI 总结</h2>
             <p>基于你最近 7 天的记录自动更新。</p>
           </div>
           <div id="summaryBox" class="summary-box"></div>
         </section>
 
-        <section class="card chart-card" data-section="chart">
-          <div class="card-title">
-            <h2>每日时间分布</h2>
-            <p>查看某一天在各类别上的时间占比。</p>
-          </div>
-          <div class="chart-header">
-            <input type="date" id="chartDate" />
-            <span id="chartSummary" class="muted"></span>
-          </div>
-          <div class="chart-wrap">
-            <canvas id="chartCanvas" width="240" height="240"></canvas>
-            <div id="chartLegend" class="chart-legend"></div>
-          </div>
-        </section>
-
         <section class="card list-card" data-section="list">
           <div class="card-title card-title-row">
             <div>
-              <h2>记录列表</h2>
+              <h2><span class="section-icon icon-list" aria-hidden="true"></span>记录列表</h2>
               <p>按时间倒序排列，可编辑或删除。</p>
             </div>
             <button id="listToggleBtn" class="ghost">收起</button>
@@ -93,7 +89,7 @@
     </main>
 
     <footer class="site-footer">
-      <button id="moreBtn" class="ghost">更多设置</button>
+      <button id="moreBtn" class="ghost"><span class="button-icon" aria-hidden="true"></span>更多设置</button>
     </footer>
 
     <div id="toolsModal" class="modal hidden" role="dialog" aria-modal="true">
@@ -128,6 +124,6 @@
       </div>
     </div>
 
-    <script src="app.js?v=20260312"></script>
+    <script src="app.js?v=20260312-3"></script>
   </body>
 </html>
