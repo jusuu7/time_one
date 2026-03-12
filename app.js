@@ -8,9 +8,6 @@ const recommendationBox = document.getElementById("recommendationBox");
 const currentJoyEl = document.getElementById("currentJoy");
 const currentAchievementEl = document.getElementById("currentAchievement");
 const currentHintEl = document.getElementById("currentHint");
-const recentChartCanvas = document.getElementById("recentChartCanvas");
-const recentChartLegend = document.getElementById("recentChartLegend");
-const recentChartSummary = document.getElementById("recentChartSummary");
 const listToggleBtn = document.getElementById("listToggleBtn");
 const listCard = document.querySelector(".list-card");
 const categoryBtn = document.getElementById("categoryBtn");
@@ -27,6 +24,14 @@ const importBtn = document.getElementById("importBtn");
 const importFile = document.getElementById("importFile");
 const exportBtn = document.getElementById("exportBtn");
 const clearBtn = document.getElementById("clearBtn");
+const aiSettingsBtn = document.getElementById("aiSettingsBtn");
+const aiModal = document.getElementById("aiModal");
+const closeAiModal = document.getElementById("closeAiModal");
+const aiEnabled = document.getElementById("aiEnabled");
+const aiBaseUrl = document.getElementById("aiBaseUrl");
+const aiModel = document.getElementById("aiModel");
+const aiApiKey = document.getElementById("aiApiKey");
+const saveAiSettingsBtn = document.getElementById("saveAiSettings");
 
 let entries = [];
 let editingId = null;
@@ -36,6 +41,16 @@ const MAX_ENTRIES_DISPLAY = 20;
 const LIST_COLLAPSE_KEY = "time_log_list_collapsed_v1";
 
 const RULES_KEY = "time_log_category_rules_v1";
+const AI_SETTINGS_KEY = "time_log_ai_settings_v1";
+const DEFAULT_AI_SETTINGS = {
+  enabled: false,
+  baseUrl: "",
+  model: "",
+  apiKey: "",
+};
+
+let aiSettings = { ...DEFAULT_AI_SETTINGS };
+let aiRecommendRequestId = 0;
 
 const CATEGORY_COLORS = {
   学习: "#2f7a6d",
@@ -180,6 +195,34 @@ function loadCategoryRules() {
 
 function saveCategoryRules() {
   localStorage.setItem(RULES_KEY, JSON.stringify(categoryRules));
+}
+
+function normalizeAiSettings(raw) {
+  const payload = raw && typeof raw === "object" ? raw : {};
+  return {
+    enabled: Boolean(payload.enabled),
+    baseUrl: String(payload.baseUrl || "").trim(),
+    model: String(payload.model || "").trim(),
+    apiKey: String(payload.apiKey || "").trim(),
+  };
+}
+
+function loadAiSettings() {
+  try {
+    const raw = localStorage.getItem(AI_SETTINGS_KEY);
+    if (!raw) {
+      aiSettings = { ...DEFAULT_AI_SETTINGS };
+      return;
+    }
+    const parsed = JSON.parse(raw);
+    aiSettings = normalizeAiSettings(parsed);
+  } catch (err) {
+    aiSettings = { ...DEFAULT_AI_SETTINGS };
+  }
+}
+
+function saveAiSettings() {
+  localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(aiSettings));
 }
 
 function resetCategoryRules() {
@@ -499,12 +542,22 @@ function makeSummary(entries7) {
   ];
 }
 
-function groupByActivity(allEntries) {
-  return groupByActivityWeighted(allEntries, []);
+function getEntryWeightByRecency(endTs, nowTs) {
+  const ageHours = Math.max(0, (nowTs - Number(endTs || 0)) / (60 * 60 * 1000));
+  const ageDays = ageHours / 24;
+  if (ageDays <= 7) {
+    return 5 + ((7 - ageDays) / 7) * 5;
+  }
+  return Math.max(0.3, 2.8 / (ageDays + 1));
 }
 
-function groupByActivityWeighted(allEntries, recentEntries) {
-  const recentIds = new Set((recentEntries || []).map((entry) => entry.id));
+function getActivityRecencyBoost(lastTime, nowTs) {
+  const ageHours = Math.max(0, (nowTs - Number(lastTime || 0)) / (60 * 60 * 1000));
+  return Math.max(0, 1.2 - ageHours / 72);
+}
+
+function groupByActivityWeighted(allEntries, nowTs = Date.now()) {
+  const weekCutoff = nowTs - 7 * 24 * 60 * 60 * 1000;
   const map = new Map();
   allEntries.forEach((entry) => {
     const category = getEntryCategory(entry);
@@ -517,17 +570,19 @@ function groupByActivityWeighted(allEntries, recentEntries) {
         totalMeaning: 0,
         totalDuration: 0,
         count: 0,
-        recentCount: 0,
+        weekWeight: 0,
+        totalWeight: 0,
         lastTime: 0,
       });
     }
     const item = map.get(key);
-    const weight = recentIds.has(entry.id) ? 2 : 1;
+    const weight = getEntryWeightByRecency(entry.endTs, nowTs);
     item.totalJoy += entry.joy * weight;
     item.totalMeaning += entry.meaning * weight;
     item.totalDuration += entry.durationMin * weight;
     item.count += weight;
-    if (recentIds.has(entry.id)) item.recentCount += 1;
+    item.totalWeight += weight;
+    if (entry.endTs >= weekCutoff) item.weekWeight += weight;
     item.lastTime = Math.max(item.lastTime, entry.endTs);
   });
   return Array.from(map.values()).map((item) => ({
@@ -535,11 +590,13 @@ function groupByActivityWeighted(allEntries, recentEntries) {
     avgJoy: item.totalJoy / item.count,
     avgMeaning: item.totalMeaning / item.count,
     avgDuration: item.totalDuration / item.count,
+    recencyBoost: getActivityRecencyBoost(item.lastTime, nowTs),
     score:
       (item.totalJoy / item.count) * 0.6 +
       (item.totalMeaning / item.count) * 0.4 +
-      Math.min(item.count / 5, 1) * 0.3 +
-      Math.min(item.recentCount / 3, 1) * 0.4,
+      Math.min(item.weekWeight / 16, 1.2) +
+      Math.min(item.totalWeight / 20, 0.8) +
+      getActivityRecencyBoost(item.lastTime, nowTs),
   }));
 }
 
@@ -558,18 +615,24 @@ function buildRecommendations(allEntries, entries7) {
   const avgMeaning7 =
     entries7.reduce((sum, e) => sum + e.meaning, 0) / (entries7.length || 1);
 
-  const groups = groupByActivityWeighted(allEntries, entries7);
   const now = Date.now();
-  const recentLimit = now - 4 * 60 * 60 * 1000;
+  const groups = groupByActivityWeighted(allEntries, now);
+  const weekCutoff = now - 7 * 24 * 60 * 60 * 1000;
+  const preferredGroups = groups.some((item) => item.lastTime >= weekCutoff)
+    ? groups.filter((item) => item.lastTime >= weekCutoff)
+    : groups;
 
   function pick(list) {
-    const filtered = list.filter((item) => item.lastTime < recentLimit);
-    return (filtered.length ? filtered : list)[0];
+    return list[0];
   }
 
-  const sortedByJoy = [...groups].sort((a, b) => b.avgJoy - a.avgJoy);
-  const sortedByMeaning = [...groups].sort((a, b) => b.avgMeaning - a.avgMeaning);
-  const sortedByScore = [...groups].sort((a, b) => b.score - a.score);
+  const sortedByJoy = [...preferredGroups].sort(
+    (a, b) => b.avgJoy - a.avgJoy || b.score - a.score
+  );
+  const sortedByMeaning = [...preferredGroups].sort(
+    (a, b) => b.avgMeaning - a.avgMeaning || b.score - a.score
+  );
+  const sortedByScore = [...preferredGroups].sort((a, b) => b.score - a.score);
 
   const shortHighJoy = sortedByJoy.filter(
     (item) => item.avgJoy >= 7 && item.avgDuration <= 60
@@ -674,8 +737,9 @@ function renderSummary() {
     recommendationBox.appendChild(card);
   });
 
+  renderAiRecommendation(entries7, recommendations);
+
   renderCurrentStats();
-  renderRecent24CategoryChart();
 }
 
 function renderCurrentStats() {
@@ -729,94 +793,151 @@ function buildComparisonHint(recent24, prev24, deltaJoy, deltaAchievement) {
   return `较昨日同时间：${joyLabel}，${achLabel}。`;
 }
 
-function getRecentCategoryTotals(hours = 24) {
-  const now = Date.now();
-  const start = now - hours * 60 * 60 * 1000;
-  const totals = {};
-
-  entries.forEach((entry) => {
-    const overlapStart = Math.max(start, Number(entry.startTs || 0));
-    const overlapEnd = Math.min(now, Number(entry.endTs || 0));
-    if (overlapEnd <= overlapStart) return;
-    const overlapMinutes = Math.round((overlapEnd - overlapStart) / 60000);
-    if (overlapMinutes <= 0) return;
-    const category = getEntryCategory(entry);
-    totals[category] = (totals[category] || 0) + overlapMinutes;
-  });
-
-  return totals;
+function isAiConfigured() {
+  return (
+    aiSettings.enabled &&
+    Boolean(aiSettings.baseUrl) &&
+    Boolean(aiSettings.model) &&
+    Boolean(aiSettings.apiKey)
+  );
 }
 
-function renderRecent24CategoryChart() {
-  if (!recentChartCanvas || !recentChartLegend || !recentChartSummary) return;
-  const totals = getRecentCategoryTotals(24);
-  const totalMinutes = Object.values(totals).reduce((sum, value) => sum + value, 0);
-  recentChartSummary.textContent = totalMinutes
-    ? `最近24小时共 ${totalMinutes} 分钟`
-    : "最近24小时暂无记录";
+function fillAiSettingsForm() {
+  if (!aiEnabled || !aiBaseUrl || !aiModel || !aiApiKey) return;
+  aiEnabled.value = aiSettings.enabled ? "true" : "false";
+  aiBaseUrl.value = aiSettings.baseUrl;
+  aiModel.value = aiSettings.model;
+  aiApiKey.value = aiSettings.apiKey;
+}
 
-  const ctx = recentChartCanvas.getContext("2d");
-  if (!ctx) return;
+function collectAiSettingsFromForm() {
+  return normalizeAiSettings({
+    enabled: aiEnabled?.value === "true",
+    baseUrl: aiBaseUrl?.value || "",
+    model: aiModel?.value || "",
+    apiKey: aiApiKey?.value || "",
+  });
+}
 
-  const rect = recentChartCanvas.getBoundingClientRect();
-  const size = Math.min(rect.width || 220, rect.height || 220);
-  const ratio = window.devicePixelRatio || 1;
-  recentChartCanvas.width = size * ratio;
-  recentChartCanvas.height = size * ratio;
-  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-  ctx.clearRect(0, 0, size, size);
+function parseAiResponse(content) {
+  const raw = String(content || "").trim();
+  if (!raw) return null;
 
-  if (!totalMinutes) {
-    ctx.fillStyle = "#8e6a5a";
-    ctx.font = "13px 'Noto Sans SC', sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("等待记录", size / 2, size / 2);
-    recentChartLegend.innerHTML = "";
-    return;
+  let candidate = raw;
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced && fenced[1]) candidate = fenced[1].trim();
+
+  const attempts = [candidate];
+  const objectMatch = candidate.match(/\{[\s\S]*\}/);
+  if (objectMatch) attempts.push(objectMatch[0]);
+
+  for (const item of attempts) {
+    try {
+      const parsed = JSON.parse(item);
+      const title = String(parsed.title || "").trim();
+      const detail = String(parsed.detail || "").trim();
+      if (title && detail) return { title, detail };
+    } catch (err) {
+      continue;
+    }
   }
 
-  const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
-  const center = size / 2;
-  const outer = size * 0.45;
-  const thickness = size * 0.18;
-  const radius = outer - thickness / 2;
-  let startAngle = -Math.PI / 2;
+  return {
+    title: "AI 推荐",
+    detail: raw.replace(/\s+/g, " ").slice(0, 120),
+  };
+}
 
-  ctx.lineCap = "butt";
-  ctx.lineWidth = thickness;
-  sorted.forEach(([category, minutes]) => {
-    const angle = (minutes / totalMinutes) * Math.PI * 2;
-    ctx.beginPath();
-    ctx.strokeStyle = colorForCategory(category);
-    ctx.arc(center, center, radius, startAngle, startAngle + angle);
-    ctx.stroke();
-    startAngle += angle;
+async function requestAiRecommendation(entries7, localRecommendations) {
+  if (!isAiConfigured()) return null;
+  const endpoint = `${aiSettings.baseUrl.replace(/\/+$/, "")}/chat/completions`;
+  const sortedEntries = [...entries].sort((a, b) => b.endTs - a.endTs).slice(0, 24);
+  const historyLines = sortedEntries.map((entry) => {
+    const category = getEntryCategory(entry);
+    return `${entry.date} ${entry.start}-${entry.end} ${entry.activity} 类别:${category} 快乐:${entry.joy} 成就:${entry.meaning} 时长:${entry.durationMin}`;
+  });
+  const { recent24, prev24 } = getComparisonStats();
+  const localTop = localRecommendations?.[0]
+    ? `${localRecommendations[0].title} | ${localRecommendations[0].detail}`
+    : "无";
+  const weekCount = entries7.length;
+
+  const prompt = [
+    "你是一个时间管理教练，请只返回 JSON，不要返回其它文字。",
+    "JSON格式: {\"title\":\"推荐活动标题\",\"detail\":\"一句话理由和建议时长\"}",
+    `最近7天记录数: ${weekCount}`,
+    `近24小时快乐:${recent24.joy} 成就:${recent24.achievement}`,
+    `较前24小时快乐变化:${recent24.joy - prev24.joy} 成就变化:${recent24.achievement - prev24.achievement}`,
+    `本地算法推荐: ${localTop}`,
+    "最近记录如下：",
+    ...historyLines,
+  ].join("\n");
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${aiSettings.apiKey}`,
+    },
+    body: JSON.stringify({
+      model: aiSettings.model,
+      temperature: 0.6,
+      messages: [
+        {
+          role: "system",
+          content:
+            "你只输出JSON对象，字段固定为title和detail，语言使用简体中文，detail不要超过40字。",
+        },
+        { role: "user", content: prompt },
+      ],
+    }),
   });
 
-  ctx.fillStyle = "#3d2d27";
-  ctx.font = "600 18px 'Noto Sans SC', sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(`${Math.round(totalMinutes / 60)}h`, center, center - 6);
-  ctx.fillStyle = "#8e6a5a";
-  ctx.font = "12px 'Noto Sans SC', sans-serif";
-  ctx.fillText("近24小时", center, center + 12);
+  if (!response.ok) {
+    throw new Error(`AI 请求失败(${response.status})`);
+  }
 
-  recentChartLegend.innerHTML = "";
-  sorted.forEach(([category, minutes]) => {
-    const percent = Math.round((minutes / totalMinutes) * 100);
-    const item = document.createElement("div");
-    item.className = "legend-item";
-    item.innerHTML = `
-      <div class="legend-label">
-        <span class="legend-dot" style="background:${colorForCategory(category)}"></span>
-        <span>${category}</span>
-      </div>
-      <span>${minutes} 分钟 · ${percent}%</span>
-    `;
-    recentChartLegend.appendChild(item);
-  });
+  const data = await response.json();
+  const content = data?.choices?.[0]?.message?.content || "";
+  return parseAiResponse(content);
+}
+
+function renderAiRecommendation(entries7, localRecommendations) {
+  if (!recommendationBox) return;
+  const previous = recommendationBox.querySelector(".ai-recommendation");
+  if (previous) previous.remove();
+  if (!isAiConfigured()) return;
+
+  const card = document.createElement("div");
+  card.className = "recommendation-card ai-recommendation";
+  const loadingTitle = document.createElement("strong");
+  loadingTitle.textContent = "AI 推荐生成中";
+  const loadingDetail = document.createElement("p");
+  loadingDetail.textContent = "正在根据近一周记录和最新趋势分析。";
+  card.append(loadingTitle, loadingDetail);
+  recommendationBox.appendChild(card);
+
+  const requestId = ++aiRecommendRequestId;
+  requestAiRecommendation(entries7, localRecommendations)
+    .then((result) => {
+      if (requestId !== aiRecommendRequestId) return;
+      if (!result) return;
+      card.innerHTML = "";
+      const titleEl = document.createElement("strong");
+      titleEl.textContent = result.title;
+      const detailEl = document.createElement("p");
+      detailEl.textContent = result.detail;
+      card.append(titleEl, detailEl);
+    })
+    .catch((err) => {
+      if (requestId !== aiRecommendRequestId) return;
+      card.innerHTML = "";
+      const titleEl = document.createElement("strong");
+      titleEl.textContent = "AI 推荐不可用";
+      const detailEl = document.createElement("p");
+      detailEl.textContent = "请检查 AI 设置、API Key 或接口跨域权限。";
+      card.append(titleEl, detailEl);
+    });
 }
 
 function renderEntries() {
@@ -969,6 +1090,30 @@ toolsModal.addEventListener("click", (event) => {
   if (event.target === toolsModal) {
     toolsModal.classList.add("hidden");
   }
+});
+
+aiSettingsBtn?.addEventListener("click", () => {
+  if (toolsModal) toolsModal.classList.add("hidden");
+  fillAiSettingsForm();
+  aiModal?.classList.remove("hidden");
+});
+
+closeAiModal?.addEventListener("click", () => {
+  aiModal?.classList.add("hidden");
+});
+
+aiModal?.addEventListener("click", (event) => {
+  if (event.target === aiModal) {
+    aiModal.classList.add("hidden");
+  }
+});
+
+saveAiSettingsBtn?.addEventListener("click", () => {
+  aiSettings = collectAiSettingsFromForm();
+  saveAiSettings();
+  aiModal?.classList.add("hidden");
+  renderSummary();
+  alert("AI 设置已保存。");
 });
 
 categoryRulesList.addEventListener("click", (event) => {
@@ -1174,9 +1319,11 @@ clearBtn.addEventListener("click", () => {
 
 function init() {
   loadCategoryRules();
+  loadAiSettings();
   loadEntries();
   listCollapsed = localStorage.getItem(LIST_COLLAPSE_KEY) === "1";
   applyListCollapse();
+  fillAiSettingsForm();
   renderEntries();
   renderSummary();
 }
@@ -1196,11 +1343,3 @@ if (listToggleBtn) {
     applyListCollapse();
   });
 }
-
-let recentChartResizeTimer = null;
-window.addEventListener("resize", () => {
-  if (recentChartResizeTimer) clearTimeout(recentChartResizeTimer);
-  recentChartResizeTimer = setTimeout(() => {
-    renderRecent24CategoryChart();
-  }, 120);
-});

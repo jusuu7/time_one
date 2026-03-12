@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>记住你的快乐</title>
-    <link rel="stylesheet" href="styles.css?v=20260312-3" />
+    <link rel="stylesheet" href="styles.css?v=20260312-4" />
   </head>
   <body>
     <div class="bg-shapes" aria-hidden="true">
@@ -20,15 +20,12 @@
     </header>
 
     <main class="layout">
-        <section class="card quick-card">
-        <div class="voice-panel">
-          <textarea
-            id="voiceText"
-            rows="2"
-            placeholder="例如：16:50~17:40 吃饭 快乐3 成就3"
-          ></textarea>
-          <button id="parseBtn" class="primary">时光存档</button>
-        </div>
+        <section class="card recommend-card" data-section="recommend">
+          <div class="card-title">
+            <h2><span class="section-icon icon-recommend" aria-hidden="true"></span>推荐活动</h2>
+            <p>保存记录后自动刷新。</p>
+          </div>
+          <div id="recommendationBox" class="recommendation-box"></div>
         </section>
 
         <section class="card current-card" data-section="current">
@@ -38,34 +35,26 @@
           </div>
           <div class="current-grid">
             <div class="current-pill">
-              <span>快乐值</span>
+              <span class="metric-label"><span class="metric-icon joy-icon" aria-hidden="true"></span>快乐值</span>
               <strong id="currentJoy">0</strong>
             </div>
             <div class="current-pill">
-              <span>成就值</span>
+              <span class="metric-label"><span class="metric-icon achievement-icon" aria-hidden="true"></span>成就值</span>
               <strong id="currentAchievement">0</strong>
             </div>
           </div>
           <p id="currentHint" class="muted"></p>
         </section>
 
-        <section class="card recommend-card" data-section="recommend">
-          <div class="card-title">
-            <h2><span class="section-icon icon-recommend" aria-hidden="true"></span>推荐活动</h2>
-            <p>保存记录后自动刷新。</p>
-          </div>
-          <div id="recommendationBox" class="recommendation-box"></div>
-        </section>
-
-        <section class="card trend-card" data-section="trend">
-          <div class="card-title">
-            <h2><span class="section-icon icon-trend" aria-hidden="true"></span>最近24小时类别占比</h2>
-            <p id="recentChartSummary">最近24小时暂无记录。</p>
-          </div>
-          <div class="trend-wrap">
-            <canvas id="recentChartCanvas" width="220" height="220"></canvas>
-            <div id="recentChartLegend" class="chart-legend compact"></div>
-          </div>
+        <section class="card quick-card">
+        <div class="voice-panel">
+          <textarea
+            id="voiceText"
+            rows="2"
+            placeholder="例如：16:50~17:40 吃饭 快乐3 成就3"
+          ></textarea>
+          <button id="parseBtn" class="primary">时光存档</button>
+        </div>
         </section>
 
         <section class="card summary-card" data-section="summary">
@@ -100,6 +89,7 @@
         </div>
         <div class="tools-list">
           <button id="categoryBtn" class="ghost">分类设置</button>
+          <button id="aiSettingsBtn" class="ghost">AI 设置</button>
           <button id="importBtn" class="ghost">导入记录</button>
           <button id="exportBtn" class="ghost">导出记录</button>
           <button id="clearBtn" class="danger">清空记录</button>
@@ -124,6 +114,40 @@
       </div>
     </div>
 
-    <script src="app.js?v=20260312-3"></script>
+    <div id="aiModal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-content card">
+        <div class="modal-head">
+          <h2>AI 接入设置</h2>
+          <button id="closeAiModal" class="ghost">关闭</button>
+        </div>
+        <p class="muted">支持 OpenAI 兼容接口（如 DeepSeek / Kimi / SiliconFlow 等）。</p>
+        <div class="rules-list ai-form">
+          <label>
+            <span>启用 AI 推荐</span>
+            <select id="aiEnabled">
+              <option value="false">关闭</option>
+              <option value="true">开启</option>
+            </select>
+          </label>
+          <label>
+            <span>接口地址</span>
+            <input id="aiBaseUrl" type="text" placeholder="例如：https://api.deepseek.com/v1" />
+          </label>
+          <label>
+            <span>模型名</span>
+            <input id="aiModel" type="text" placeholder="例如：deepseek-chat" />
+          </label>
+          <label>
+            <span>API Key</span>
+            <input id="aiApiKey" type="password" placeholder="以 sk- 开头" />
+          </label>
+        </div>
+        <div class="rules-actions">
+          <button id="saveAiSettings" class="primary">保存 AI 设置</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="app.js?v=20260312-4"></script>
   </body>
 </html>

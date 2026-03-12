@@ -110,10 +110,9 @@ h2 {
   display: grid;
   grid-template-columns: 1fr;
   grid-template-areas:
-    "quick"
-    "current"
     "recommend"
-    "trend"
+    "current"
+    "quick"
     "list"
     "summary";
   gap: 12px;
@@ -140,10 +139,6 @@ h2 {
 
 .recommend-card {
   grid-area: recommend;
-}
-
-.trend-card {
-  grid-area: trend;
 }
 
 .list-card {
@@ -256,10 +251,6 @@ button:hover {
   content: "✦";
 }
 
-.icon-trend::before {
-  content: "◍";
-}
-
 .icon-summary::before {
   content: "≋";
 }
@@ -321,67 +312,46 @@ button:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .current-pill strong {
-  font-size: 34px;
+  font-size: 22px;
   line-height: 1;
   letter-spacing: 0.02em;
+}
+
+.metric-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.metric-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(214, 151, 113, 0.45);
+  background: rgba(255, 236, 219, 0.9);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #92593d;
+}
+
+.joy-icon::before {
+  content: "♥";
+}
+
+.achievement-icon::before {
+  content: "◆";
 }
 
 #currentHint {
   margin-top: 8px;
   color: var(--muted);
   font-size: 13px;
-}
-
-.trend-wrap {
-  display: grid;
-  justify-items: center;
-  gap: 12px;
-}
-
-#recentChartCanvas {
-  width: min(250px, 70vw);
-  height: min(250px, 70vw);
-}
-
-.chart-legend {
-  width: 100%;
-  display: grid;
-  gap: 8px;
-}
-
-.chart-legend.compact {
-  gap: 6px;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 10px;
-  border: 1px solid rgba(186, 145, 120, 0.24);
-  border-radius: 14px;
-  background: rgba(255, 248, 240, 0.7);
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.legend-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--text);
-}
-
-.legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  display: inline-block;
 }
 
 .card-title-row {
@@ -525,6 +495,17 @@ button:hover {
   font-size: 12px;
 }
 
+.ai-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--pill-text);
+}
+
+.ai-recommendation {
+  border-style: dashed;
+}
+
 .muted {
   color: var(--muted);
 }
@@ -589,19 +570,15 @@ button:hover {
     width: min(1180px, 90vw);
     grid-template-columns: minmax(520px, 1.15fr) minmax(320px, 0.85fr);
     grid-template-areas:
-      "quick summary"
-      "current summary"
       "recommend summary"
+      "current summary"
+      "quick summary"
       "list summary";
     gap: 18px;
   }
 
   .card {
     padding: 20px;
-  }
-
-  .trend-card {
-    display: none;
   }
 
   .summary-card {
@@ -621,7 +598,7 @@ button:hover {
   }
 
   .current-pill strong {
-    font-size: 30px;
+    font-size: 24px;
   }
 }
 
