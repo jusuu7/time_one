@@ -7,6 +7,7 @@ const summaryBox = document.getElementById("summaryBox");
 const recommendationBox = document.getElementById("recommendationBox");
 const currentJoyEl = document.getElementById("currentJoy");
 const currentAchievementEl = document.getElementById("currentAchievement");
+const currentHintEl = document.getElementById("currentHint");
 const chartDateInput = document.getElementById("chartDate");
 const chartCanvas = document.getElementById("chartCanvas");
 const chartLegend = document.getElementById("chartLegend");
@@ -501,12 +502,35 @@ function buildRecommendations(allEntries, entries7) {
 
   const recommendations = [];
 
-  if (avgJoy7 < 6) {
+  const { recent24, prev24, deltaJoy, deltaAchievement } = getComparisonStats();
+  const compareHint = buildComparisonHint(recent24, prev24, deltaJoy, deltaAchievement);
+
+  if (deltaJoy <= -3) {
     const topJoy = pick(sortedByJoy);
     if (topJoy) {
       recommendations.push({
         title: `补一点快乐：${topJoy.activity}`,
-        detail: `历史平均快乐 ${topJoy.avgJoy.toFixed(
+        detail: `${compareHint} 历史平均快乐 ${topJoy.avgJoy.toFixed(
+          1
+        )}，建议时长约 ${Math.round(topJoy.avgDuration)} 分钟。`,
+      });
+    }
+  } else if (deltaAchievement <= -3) {
+    const topMeaning = pick(sortedByMeaning);
+    if (topMeaning) {
+      recommendations.push({
+        title: `补一点成就：${topMeaning.activity}`,
+        detail: `${compareHint} 历史平均成就 ${topMeaning.avgMeaning.toFixed(
+          1
+        )}，建议时长约 ${Math.round(topMeaning.avgDuration)} 分钟。`,
+      });
+    }
+  } else if (avgJoy7 < 6) {
+    const topJoy = pick(sortedByJoy);
+    if (topJoy) {
+      recommendations.push({
+        title: `补一点快乐：${topJoy.activity}`,
+        detail: `${compareHint} 历史平均快乐 ${topJoy.avgJoy.toFixed(
           1
         )}，建议时长约 ${Math.round(topJoy.avgDuration)} 分钟。`,
       });
@@ -516,7 +540,7 @@ function buildRecommendations(allEntries, entries7) {
     if (topMeaning) {
       recommendations.push({
         title: `补一点成就：${topMeaning.activity}`,
-        detail: `历史平均成就 ${topMeaning.avgMeaning.toFixed(
+        detail: `${compareHint} 历史平均成就 ${topMeaning.avgMeaning.toFixed(
           1
         )}，建议时长约 ${Math.round(topMeaning.avgDuration)} 分钟。`,
       });
@@ -526,7 +550,7 @@ function buildRecommendations(allEntries, entries7) {
     if (balanced) {
       recommendations.push({
         title: `保持平衡：${balanced.activity}`,
-        detail: `综合表现优秀，建议时长约 ${Math.round(
+        detail: `${compareHint} 综合表现优秀，建议时长约 ${Math.round(
           balanced.avgDuration
         )} 分钟。`,
       });
@@ -581,16 +605,53 @@ function renderSummary() {
 
 function renderCurrentStats() {
   if (!currentJoyEl || !currentAchievementEl) return;
-  const now = Date.now();
-  const cutoff = now - 24 * 60 * 60 * 1000;
-  const recent = entries.filter((entry) => entry.endTs >= cutoff);
-  const joySum = recent.reduce((sum, entry) => sum + Number(entry.joy || 0), 0);
-  const achievementSum = recent.reduce(
+  const { recent24, prev24, deltaJoy, deltaAchievement } = getComparisonStats();
+  currentJoyEl.textContent = Math.round(recent24.joy);
+  currentAchievementEl.textContent = Math.round(recent24.achievement);
+  if (currentHintEl) {
+    currentHintEl.textContent = buildComparisonHint(
+      recent24,
+      prev24,
+      deltaJoy,
+      deltaAchievement
+    );
+  }
+}
+
+function getWindowStats(startTs, endTs) {
+  const filtered = entries.filter(
+    (entry) => entry.endTs >= startTs && entry.endTs < endTs
+  );
+  const joy = filtered.reduce((sum, entry) => sum + Number(entry.joy || 0), 0);
+  const achievement = filtered.reduce(
     (sum, entry) => sum + Number(entry.meaning || 0),
     0
   );
-  currentJoyEl.textContent = Math.round(100 + joySum);
-  currentAchievementEl.textContent = Math.round(100 + achievementSum);
+  return { joy, achievement, count: filtered.length };
+}
+
+function getComparisonStats() {
+  const now = Date.now();
+  const recent24 = getWindowStats(now - 24 * 60 * 60 * 1000, now);
+  const prev24 = getWindowStats(now - 48 * 60 * 60 * 1000, now - 24 * 60 * 60 * 1000);
+  const deltaJoy = recent24.joy - prev24.joy;
+  const deltaAchievement = recent24.achievement - prev24.achievement;
+  return { recent24, prev24, deltaJoy, deltaAchievement };
+}
+
+function buildComparisonHint(recent24, prev24, deltaJoy, deltaAchievement) {
+  if (recent24.count === 0 && prev24.count === 0) {
+    return "近 24 小时暂无记录。";
+  }
+  if (prev24.count === 0) {
+    return "这是过去 24 小时的首次统计。";
+  }
+  const joyLabel = deltaJoy >= 0 ? `快乐 +${deltaJoy}` : `快乐 ${deltaJoy}`;
+  const achLabel =
+    deltaAchievement >= 0
+      ? `成就 +${deltaAchievement}`
+      : `成就 ${deltaAchievement}`;
+  return `较昨日同时间：${joyLabel}，${achLabel}。`;
 }
 
 function renderDailyChart() {

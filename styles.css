@@ -377,6 +377,12 @@ button:hover {
   font-size: 18px;
 }
 
+#currentHint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .chart-header {
   display: flex;
   align-items: center;
@@ -632,7 +638,7 @@ button:hover {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding: 0 4vw calc(10px + env(safe-area-inset-bottom));
+    padding: 10px 4vw calc(10px + env(safe-area-inset-bottom));
     overflow: visible;
   }
 
@@ -700,11 +706,15 @@ button:hover {
     background: transparent;
     border-top: none;
     font-size: 12px;
+    display: flex;
+    justify-content: center;
   }
 
   .site-footer button {
-    border-radius: 0;
-    width: 100%;
+    border-radius: 999px;
+    width: auto;
+    padding: 6px 14px;
+    font-size: 12px;
   }
 
   .footer-actions {
