@@ -8,6 +8,7 @@ const recommendationBox = document.getElementById("recommendationBox");
 const currentJoyEl = document.getElementById("currentJoy");
 const currentAchievementEl = document.getElementById("currentAchievement");
 const currentHintEl = document.getElementById("currentHint");
+const aiQuickBtn = document.getElementById("aiQuickBtn");
 const listToggleBtn = document.getElementById("listToggleBtn");
 const listCard = document.querySelector(".list-card");
 const categoryBtn = document.getElementById("categoryBtn");
@@ -391,10 +392,12 @@ function parseEntryFromText(text) {
   const parsedTime = parseTimeRange(normalized);
   const joyValue = parseScore(normalized, "快乐");
   const achievementValue =
-    parseScore(normalized, "成就") ?? parseScore(normalized, "意义");
+    parseScore(normalized, "价值") ??
+    parseScore(normalized, "成就") ??
+    parseScore(normalized, "意义");
 
   const scorePattern =
-    /(快乐|成就|意义)值?\s*([0-9]{1,2}|[一二三四五六七八九十])/g;
+    /(快乐|价值|成就|意义)值?\s*([0-9]{1,2}|[一二三四五六七八九十])/g;
   let activityText = normalized;
   if (parsedTime?.rawRegex) {
     activityText = activityText.replace(parsedTime.rawRegex, "");
@@ -410,8 +413,8 @@ function parseEntryFromText(text) {
   const errors = [];
   if (!parsedTime) errors.push("缺少时间段（例如 16:50~17:40）");
   if (!activityText) errors.push("缺少活动内容");
-  if (joyValue == null) errors.push("缺少快乐值");
-  if (achievementValue == null) errors.push("缺少成就值");
+  if (joyValue == null) errors.push("缺少快乐");
+  if (achievementValue == null) errors.push("缺少价值");
 
   if (errors.length) {
     return { errors };
@@ -535,7 +538,7 @@ function makeSummary(entries7) {
     `近 7 天共记录 ${entries7.length} 次，总时长 ${(
       totalMinutes / 60
     ).toFixed(1)} 小时。`,
-    `平均快乐值 ${avgJoy.toFixed(1)}，平均成就值 ${avgMeaning.toFixed(1)}。`,
+    `平均当下快乐 ${avgJoy.toFixed(1)}，平均长期价值 ${avgMeaning.toFixed(1)}。`,
     topCategory
       ? `最常出现的类别是「${topCategory[0]}」，出现 ${topCategory[1]} 次。`
       : "暂未形成明显类别偏好。",
@@ -657,8 +660,8 @@ function buildRecommendations(allEntries, entries7) {
     const topMeaning = pick(sortedByMeaning);
     if (topMeaning) {
       recommendations.push({
-        title: `补一点成就：${topMeaning.activity}`,
-        detail: `${compareHint} 历史平均成就 ${topMeaning.avgMeaning.toFixed(
+        title: `补一点价值：${topMeaning.activity}`,
+        detail: `${compareHint} 历史平均价值 ${topMeaning.avgMeaning.toFixed(
           1
         )}，建议时长约 ${Math.round(topMeaning.avgDuration)} 分钟。`,
       });
@@ -677,8 +680,8 @@ function buildRecommendations(allEntries, entries7) {
     const topMeaning = pick(sortedByMeaning);
     if (topMeaning) {
       recommendations.push({
-        title: `补一点成就：${topMeaning.activity}`,
-        detail: `${compareHint} 历史平均成就 ${topMeaning.avgMeaning.toFixed(
+        title: `补一点价值：${topMeaning.activity}`,
+        detail: `${compareHint} 历史平均价值 ${topMeaning.avgMeaning.toFixed(
           1
         )}，建议时长约 ${Math.round(topMeaning.avgDuration)} 分钟。`,
       });
@@ -707,7 +710,7 @@ function buildRecommendations(allEntries, entries7) {
   if (topMeaning) {
     recommendations.push({
       title: `长期收益：${topMeaning.activity}`,
-      detail: `历史成就高，适合安排在精力较好的时段。`,
+      detail: `历史价值高，适合安排在精力较好的时段。`,
     });
   }
 
@@ -785,11 +788,12 @@ function buildComparisonHint(recent24, prev24, deltaJoy, deltaAchievement) {
   if (prev24.count === 0) {
     return "这是过去 24 小时的首次统计。";
   }
-  const joyLabel = deltaJoy >= 0 ? `快乐 +${deltaJoy}` : `快乐 ${deltaJoy}`;
+  const joyLabel =
+    deltaJoy >= 0 ? `当下快乐 +${deltaJoy}` : `当下快乐 ${deltaJoy}`;
   const achLabel =
     deltaAchievement >= 0
-      ? `成就 +${deltaAchievement}`
-      : `成就 ${deltaAchievement}`;
+      ? `长期价值 +${deltaAchievement}`
+      : `长期价值 ${deltaAchievement}`;
   return `较昨日同时间：${joyLabel}，${achLabel}。`;
 }
 
@@ -854,7 +858,7 @@ async function requestAiRecommendation(entries7, localRecommendations) {
   const sortedEntries = [...entries].sort((a, b) => b.endTs - a.endTs).slice(0, 24);
   const historyLines = sortedEntries.map((entry) => {
     const category = getEntryCategory(entry);
-    return `${entry.date} ${entry.start}-${entry.end} ${entry.activity} 类别:${category} 快乐:${entry.joy} 成就:${entry.meaning} 时长:${entry.durationMin}`;
+    return `${entry.date} ${entry.start}-${entry.end} ${entry.activity} 类别:${category} 快乐:${entry.joy} 价值:${entry.meaning} 时长:${entry.durationMin}`;
   });
   const { recent24, prev24 } = getComparisonStats();
   const localTop = localRecommendations?.[0]
@@ -866,8 +870,8 @@ async function requestAiRecommendation(entries7, localRecommendations) {
     "你是一个时间管理教练，请只返回 JSON，不要返回其它文字。",
     "JSON格式: {\"title\":\"推荐活动标题\",\"detail\":\"一句话理由和建议时长\"}",
     `最近7天记录数: ${weekCount}`,
-    `近24小时快乐:${recent24.joy} 成就:${recent24.achievement}`,
-    `较前24小时快乐变化:${recent24.joy - prev24.joy} 成就变化:${recent24.achievement - prev24.achievement}`,
+    `近24小时快乐:${recent24.joy} 价值:${recent24.achievement}`,
+    `较前24小时快乐变化:${recent24.joy - prev24.joy} 价值变化:${recent24.achievement - prev24.achievement}`,
     `本地算法推荐: ${localTop}`,
     "最近记录如下：",
     ...historyLines,
@@ -971,7 +975,7 @@ function renderEntries() {
         <span>${entry.start} - ${entry.end}</span>
         <span>用时 ${entry.durationMin} 分钟</span>
         <span>快乐 ${entry.joy}</span>
-        <span>成就 ${entry.meaning}</span>
+        <span>价值 ${entry.meaning}</span>
       </div>
     `;
     entriesList.appendChild(item);
@@ -980,7 +984,7 @@ function renderEntries() {
 
 function setEditorFromEntry(entry) {
   if (!entry) return;
-  voiceText.value = `${entry.start}~${entry.end} ${entry.activity} 快乐${entry.joy} 成就${entry.meaning}`;
+  voiceText.value = `${entry.start}~${entry.end} ${entry.activity} 快乐${entry.joy} 价值${entry.meaning}`;
 }
 
 function handleParseAndSave() {
@@ -1093,6 +1097,12 @@ toolsModal.addEventListener("click", (event) => {
 });
 
 aiSettingsBtn?.addEventListener("click", () => {
+  if (toolsModal) toolsModal.classList.add("hidden");
+  fillAiSettingsForm();
+  aiModal?.classList.remove("hidden");
+});
+
+aiQuickBtn?.addEventListener("click", () => {
   if (toolsModal) toolsModal.classList.add("hidden");
   fillAiSettingsForm();
   aiModal?.classList.remove("hidden");
@@ -1233,7 +1243,13 @@ function normalizeImportedEntry(item) {
     todayString();
   const joy = Number(item.joy ?? item.happy ?? item.happiness);
   const meaningRaw =
-    item.meaning ?? item.achievement ?? item.成就 ?? item["成就"];
+    item.meaning ??
+    item.value ??
+    item.achievement ??
+    item.成就 ??
+    item["成就"] ??
+    item.价值 ??
+    item["价值"];
   const meaning = Number(meaningRaw);
   if (!activity || !start || !end || !Number.isFinite(joy) || !Number.isFinite(meaning)) {
     return null;

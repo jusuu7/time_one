@@ -297,6 +297,11 @@ button:hover {
   letter-spacing: 0.3px;
 }
 
+.ai-quick-btn {
+  margin-top: 8px;
+  width: 100%;
+}
+
 .current-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -551,6 +556,10 @@ button:hover {
     display: none;
   }
 
+  .ai-quick-btn {
+    margin-top: 6px;
+  }
+
   .entry-head strong {
     font-size: 16px;
   }
@@ -595,6 +604,11 @@ button:hover {
   .summary-box,
   .recommendation-box {
     gap: 10px;
+  }
+
+  .ai-quick-btn {
+    width: auto;
+    margin-top: 10px;
   }
 
   .current-pill strong {
