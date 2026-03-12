@@ -642,10 +642,15 @@ button:hover {
 
   .site-footer {
     margin-top: auto;
-    padding: 6px 4vw calc(6px + env(safe-area-inset-bottom));
+    padding: 0 0 calc(6px + env(safe-area-inset-bottom));
     background: rgba(255, 255, 255, 0.9);
     border-top: 1px solid var(--border);
     font-size: 12px;
+  }
+
+  .site-footer button {
+    border-radius: 0;
+    width: 100%;
   }
 
   .footer-actions {
