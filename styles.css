@@ -110,7 +110,7 @@ p {
 
 .subtitle {
   color: var(--muted);
-  margin-top: 6px;
+  margin-top: 2px;
   font-size: 13px;
 }
 
@@ -523,6 +523,21 @@ button:hover {
   font-size: 12px;
 }
 
+.site-footer button {
+  width: 100%;
+}
+
+.site-footer button {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.tools-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
 @media (max-width: 480px) {
   body {
     display: flex;
@@ -545,7 +560,8 @@ button:hover {
   }
 
   .subtitle {
-    display: none;
+    display: block;
+    font-size: 12px;
   }
 
   .header-actions {
@@ -654,10 +670,6 @@ button:hover {
     display: block;
   }
 
-  .title-wrap h1 {
-    font-size: 32px;
-  }
-
   .subtitle {
     font-size: 15px;
     margin-top: 10px;
@@ -670,6 +682,10 @@ button:hover {
   .header-actions button {
     padding: 10px 16px;
     font-size: 14px;
+  }
+
+  .site-footer button {
+    width: auto;
   }
 
   .layout {

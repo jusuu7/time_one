@@ -16,7 +16,6 @@
     <header class="site-header">
       <div class="title-wrap">
         <p class="eyebrow">TIME · ARCHIVE</p>
-        <h1>时光存档</h1>
         <p class="subtitle">每一刻，好好存起来</p>
       </div>
     </header>
@@ -29,7 +28,7 @@
             rows="2"
             placeholder="例如：16:50~17:40 吃饭 快乐3 成就3"
           ></textarea>
-          <button id="parseBtn" class="primary">保存记录</button>
+          <button id="parseBtn" class="primary">时光存档</button>
         </div>
         </section>
 
@@ -74,15 +73,25 @@
     </main>
 
     <footer class="site-footer">
-      <div class="footer-actions">
-        <button id="categoryBtn" class="ghost">分类设置</button>
-        <button id="importBtn" class="ghost">导入记录</button>
-        <button id="exportBtn" class="ghost">导出记录</button>
-        <button id="clearBtn" class="danger">清空记录</button>
-      </div>
-      <input id="importFile" type="file" accept="application/json" class="is-hidden" />
+      <button id="moreBtn" class="ghost">更多设置</button>
       <p>数据仅保存在本地浏览器（LocalStorage）。</p>
     </footer>
+
+    <div id="toolsModal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-content card">
+        <div class="modal-head">
+          <h2>工具与设置</h2>
+          <button id="closeToolsModal" class="ghost">关闭</button>
+        </div>
+        <div class="tools-list">
+          <button id="categoryBtn" class="ghost">分类设置</button>
+          <button id="importBtn" class="ghost">导入记录</button>
+          <button id="exportBtn" class="ghost">导出记录</button>
+          <button id="clearBtn" class="danger">清空记录</button>
+        </div>
+        <input id="importFile" type="file" accept="application/json" class="is-hidden" />
+      </div>
+    </div>
 
     <div id="categoryModal" class="modal hidden" role="dialog" aria-modal="true">
       <div class="modal-content card">

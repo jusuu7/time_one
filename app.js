@@ -16,6 +16,9 @@ const categoryRulesList = document.getElementById("categoryRulesList");
 const addCategoryRuleBtn = document.getElementById("addCategoryRule");
 const saveCategoryRulesBtn = document.getElementById("saveCategoryRules");
 const resetCategoryRulesBtn = document.getElementById("resetCategoryRules");
+const moreBtn = document.getElementById("moreBtn");
+const toolsModal = document.getElementById("toolsModal");
+const closeToolsModal = document.getElementById("closeToolsModal");
 const importBtn = document.getElementById("importBtn");
 const importFile = document.getElementById("importFile");
 const exportBtn = document.getElementById("exportBtn");
@@ -658,7 +661,7 @@ function renderEntries() {
   if (!entries.length) {
     const empty = document.createElement("div");
     empty.className = "summary-item";
-    empty.textContent = "暂无记录，先从一次语音输入开始。";
+    empty.textContent = "暂无记录，先写下一条记录吧。";
     entriesList.appendChild(empty);
     return;
   }
@@ -782,6 +785,7 @@ chartDateInput.addEventListener("change", () => {
 categoryBtn.addEventListener("click", () => {
   renderCategoryRulesEditor();
   categoryModal.classList.remove("hidden");
+  if (toolsModal) toolsModal.classList.add("hidden");
 });
 
 closeCategoryModal.addEventListener("click", () => {
@@ -791,6 +795,20 @@ closeCategoryModal.addEventListener("click", () => {
 categoryModal.addEventListener("click", (event) => {
   if (event.target === categoryModal) {
     categoryModal.classList.add("hidden");
+  }
+});
+
+moreBtn.addEventListener("click", () => {
+  toolsModal.classList.remove("hidden");
+});
+
+closeToolsModal.addEventListener("click", () => {
+  toolsModal.classList.add("hidden");
+});
+
+toolsModal.addEventListener("click", (event) => {
+  if (event.target === toolsModal) {
+    toolsModal.classList.add("hidden");
   }
 });
 
@@ -840,6 +858,7 @@ resetCategoryRulesBtn.addEventListener("click", () => {
 });
 
 exportBtn.addEventListener("click", () => {
+  if (toolsModal) toolsModal.classList.add("hidden");
   const exportEntries = entries.map((entry) => ({
     ...entry,
     category: getEntryCategory(entry),
@@ -856,6 +875,7 @@ exportBtn.addEventListener("click", () => {
 });
 
 importBtn.addEventListener("click", () => {
+  if (toolsModal) toolsModal.classList.add("hidden");
   if (importFile) importFile.click();
 });
 
@@ -943,6 +963,7 @@ importFile.addEventListener("change", (event) => {
 });
 
 clearBtn.addEventListener("click", () => {
+  if (toolsModal) toolsModal.classList.add("hidden");
   if (!confirm("确定要清空所有记录吗？此操作不可撤销。")) return;
   entries = [];
   saveEntries();
