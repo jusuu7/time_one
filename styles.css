@@ -83,10 +83,10 @@ p {
 .site-header {
   position: relative;
   z-index: 1;
-  padding: 40px 6vw 20px;
+  padding: 24px 5vw 12px;
   display: flex;
   flex-wrap: wrap;
-  gap: 24px;
+  gap: 16px;
   justify-content: space-between;
   align-items: center;
 }
@@ -101,30 +101,43 @@ p {
   font-size: 12px;
   color: var(--muted);
   margin-bottom: 6px;
+  display: none;
+}
+
+.title-wrap h1 {
+  font-size: 24px;
 }
 
 .subtitle {
   color: var(--muted);
-  margin-top: 10px;
+  margin-top: 6px;
+  font-size: 13px;
 }
 
 .header-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.header-actions button {
+  padding: 6px 10px;
+  font-size: 12px;
 }
 
 .layout {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(320px, 1.4fr) minmax(260px, 0.9fr);
-  gap: 24px;
-  padding: 0 6vw 24px;
-}
-
-.main-stack {
-  display: grid;
-  gap: 18px;
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    "quick"
+    "recommend"
+    "summary"
+    "chart"
+    "list";
+  gap: 14px;
+  padding: 0 5vw 20px;
 }
 
 .card {
@@ -132,12 +145,13 @@ p {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 24px;
+  padding: 14px;
   backdrop-filter: blur(6px);
 }
 
 .quick-card {
-  padding: 14px;
+  grid-area: quick;
+  padding: 12px;
 }
 
 .quick-card .card-title {
@@ -149,7 +163,7 @@ p {
 }
 
 .quick-card .card-title p {
-  font-size: 12px;
+  display: none;
 }
 
 .quick-card .voice-panel {
@@ -159,7 +173,7 @@ p {
 }
 
 .quick-card textarea {
-  min-height: 48px;
+  min-height: 44px;
   padding: 8px 10px;
 }
 
@@ -172,8 +186,28 @@ p {
   gap: 10px;
 }
 
+.quick-card .muted {
+  font-size: 12px;
+}
+
+.summary-card {
+  grid-area: summary;
+}
+
+.chart-card {
+  grid-area: chart;
+}
+
+.recommend-card {
+  grid-area: recommend;
+}
+
+.list-card {
+  grid-area: list;
+}
+
 .card-title {
-  margin-bottom: 18px;
+  margin-bottom: 10px;
 }
 
 .card-title p {
@@ -181,18 +215,13 @@ p {
   margin-top: 6px;
 }
 
-.side-stack {
-  display: grid;
-  gap: 24px;
-}
-
 .voice-panel {
   display: grid;
-  gap: 12px;
-  padding: 14px;
+  gap: 8px;
+  padding: 10px;
   border-radius: 14px;
   border: 1px dashed var(--border);
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   background: rgba(255, 255, 255, 0.65);
 }
 
@@ -206,12 +235,16 @@ p {
   color: var(--muted);
 }
 
+#voiceStatus:empty {
+  display: none;
+}
+
 textarea,
 input,
 select {
   font: inherit;
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-radius: 10px;
   border: 1px solid rgba(31, 27, 22, 0.18);
   background: rgba(255, 255, 255, 0.9);
@@ -247,7 +280,7 @@ textarea {
 button {
   font: inherit;
   border: none;
-  padding: 10px 16px;
+  padding: 8px 12px;
   border-radius: 999px;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
@@ -276,21 +309,21 @@ button:hover {
 .summary-box,
 .recommendation-box {
   display: grid;
-  gap: 12px;
-  font-size: 15px;
+  gap: 8px;
+  font-size: 13px;
   color: var(--ink);
 }
 
 .summary-item {
   background: rgba(255, 255, 255, 0.7);
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border: 1px solid rgba(31, 27, 22, 0.08);
 }
 
 .recommendation-card {
   border-radius: 14px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   background: rgba(45, 111, 106, 0.12);
   border: 1px solid rgba(45, 111, 106, 0.3);
 }
@@ -299,7 +332,12 @@ button:hover {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+#chartSummary {
+  font-size: 12px;
 }
 
 .chart-wrap {
@@ -398,16 +436,16 @@ button:hover {
 
 .entries-list {
   display: grid;
-  gap: 6px;
+  gap: 5px;
 }
 
 .entry-item {
-  padding: 8px 10px;
+  padding: 6px 8px;
   border-radius: 10px;
   border: 1px solid rgba(31, 27, 22, 0.12);
   background: rgba(255, 255, 255, 0.75);
   display: grid;
-  gap: 4px;
+  gap: 3px;
 }
 
 .entry-head {
@@ -420,10 +458,10 @@ button:hover {
 
 .entry-tags {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   flex-wrap: wrap;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .entry-actions {
@@ -432,20 +470,20 @@ button:hover {
 }
 
 .entry-actions button {
-  padding: 4px 10px;
-  font-size: 12px;
+  padding: 3px 8px;
+  font-size: 11px;
 }
 
 .badge {
-  padding: 2px 7px;
+  padding: 2px 6px;
   border-radius: 999px;
   background: rgba(208, 107, 61, 0.12);
   color: #a14a23;
-  font-size: 10px;
+  font-size: 9px;
 }
 
 .list-card {
-  padding: 12px;
+  padding: 10px;
 }
 
 .list-card .card-title {
@@ -460,91 +498,126 @@ button:hover {
   z-index: 1;
 }
 
-@media (max-width: 960px) {
-  .layout {
-    grid-template-columns: 1fr;
+@media (min-width: 960px) {
+  .site-header {
+    padding: 40px 6vw 20px;
+    gap: 24px;
   }
+
+  .eyebrow {
+    display: block;
+  }
+
+  .title-wrap h1 {
+    font-size: 32px;
+  }
+
+  .subtitle {
+    font-size: 15px;
+    margin-top: 10px;
+  }
+
   .header-actions {
-    width: 100%;
-    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .header-actions button {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  .layout {
+    grid-template-columns: minmax(320px, 1.4fr) minmax(260px, 0.9fr);
+    grid-template-areas:
+      "quick summary"
+      "list summary"
+      "list chart"
+      "list recommend";
+    gap: 24px;
+    padding: 0 6vw 24px;
+  }
+
+  .card {
+    padding: 24px;
+  }
+
+  .card-title {
+    margin-bottom: 18px;
+  }
+
+  .quick-card {
+    padding: 18px;
+  }
+
+  .quick-card .card-title p {
+    display: block;
+    font-size: 13px;
+  }
+
+  .quick-card textarea {
+    min-height: 64px;
+    padding: 10px 12px;
+  }
+
+  .quick-card button {
+    padding: 8px 14px;
+    font-size: 14px;
+  }
+
+  textarea,
+  input,
+  select {
+    padding: 10px 12px;
+  }
+
+  button {
+    padding: 10px 16px;
+  }
+
+  .summary-box,
+  .recommendation-box {
+    gap: 12px;
+    font-size: 15px;
+  }
+
+  .summary-item {
+    padding: 12px 14px;
+  }
+
+  .recommendation-card {
+    padding: 14px 16px;
+  }
+
+  .entries-list {
+    gap: 8px;
+  }
+
+  .entry-item {
+    padding: 10px 12px;
+    gap: 6px;
+  }
+
+  .entry-tags {
+    font-size: 12px;
+    gap: 6px;
+  }
+
+  .entry-actions button {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+
+  .badge {
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+
+  .list-card {
+    padding: 16px;
   }
 }
 
 @media (max-width: 720px) {
-  .site-header {
-    padding: 24px 5vw 12px;
-  }
-
-  .title-wrap h1 {
-    font-size: 22px;
-  }
-
-  .subtitle {
-    font-size: 13px;
-  }
-
-  .header-actions {
-    gap: 8px;
-  }
-
-  .header-actions button {
-    flex: 1 1 auto;
-  }
-
-  .layout {
-    padding: 0 5vw 20px;
-    gap: 16px;
-  }
-
-  .main-stack {
-    gap: 14px;
-  }
-
-  .card {
-    padding: 14px;
-  }
-
-  .quick-card {
-    padding: 12px;
-  }
-
-  .quick-card .card-title h2 {
-    font-size: 17px;
-  }
-
-  .voice-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .voice-row button {
-    width: 100%;
-  }
-
-  .voice-panel textarea {
-    min-height: 56px;
-  }
-
-  .chart-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-
-  #chartSummary {
-    font-size: 12px;
-  }
-
-  .entry-head {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .entry-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-
   .rule-row {
     grid-template-columns: 1fr;
   }
