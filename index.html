@@ -32,31 +32,18 @@
         <section class="card quick-card">
         <div class="card-title">
           <h2>快速记录</h2>
-          <p>支持语音输入，自动解析时间、活动、快乐值、意义值。</p>
+          <p>输入一行记录，自动解析时间、活动、快乐值、意义值。</p>
         </div>
 
         <div class="voice-panel">
-          <div class="voice-row">
-            <button id="voiceBtn" class="primary">开始语音</button>
-            <span id="voiceStatus" class="muted"></span>
-          </div>
           <textarea
             id="voiceText"
             rows="2"
-            placeholder="例如：16:50~17:40，吃饭，然后快乐值3意义3"
+            placeholder="例如：16:50~17:40 吃饭 快乐3 意义3"
           ></textarea>
-          <button id="parseBtn" class="ghost">解析语音文本</button>
+          <button id="parseBtn" class="primary">保存记录</button>
         </div>
-
-        <p class="muted">输入后点击“解析语音文本”，系统会自动保存并归类。</p>
         </section>
-
-        <div id="mobileTabs" class="mobile-tabs is-hidden">
-          <button class="tab-btn active" data-target="list">记录</button>
-          <button class="tab-btn" data-target="recommend">推荐</button>
-          <button class="tab-btn" data-target="summary">总结</button>
-          <button class="tab-btn" data-target="chart">统计</button>
-        </div>
 
         <section class="card recommend-card" data-section="recommend">
           <div class="card-title">

@@ -1,8 +1,6 @@
 const STORAGE_KEY = "time_log_entries_v1";
 
 const voiceText = document.getElementById("voiceText");
-const voiceBtn = document.getElementById("voiceBtn");
-const voiceStatus = document.getElementById("voiceStatus");
 const parseBtn = document.getElementById("parseBtn");
 const entriesList = document.getElementById("entriesList");
 const summaryBox = document.getElementById("summaryBox");
@@ -20,8 +18,6 @@ const saveCategoryRulesBtn = document.getElementById("saveCategoryRules");
 const resetCategoryRulesBtn = document.getElementById("resetCategoryRules");
 const exportBtn = document.getElementById("exportBtn");
 const clearBtn = document.getElementById("clearBtn");
-const mobileTabs = document.getElementById("mobileTabs");
-const sectionCards = document.querySelectorAll("[data-section]");
 
 let entries = [];
 let editingId = null;
@@ -863,99 +859,12 @@ clearBtn.addEventListener("click", () => {
   renderSummary();
 });
 
-function setupSpeech() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    voiceBtn.disabled = true;
-    voiceStatus.textContent = "当前浏览器不支持语音输入";
-    return;
-  }
-  const recognition = new SpeechRecognition();
-  recognition.lang = "zh-CN";
-  recognition.interimResults = false;
-  recognition.continuous = false;
-
-  let isListening = false;
-
-  voiceBtn.addEventListener("click", () => {
-    if (isListening) {
-      recognition.stop();
-      return;
-    }
-    recognition.start();
-  });
-
-  recognition.onstart = () => {
-    isListening = true;
-    voiceStatus.textContent = "正在聆听…";
-    voiceBtn.textContent = "停止语音";
-  };
-
-  recognition.onend = () => {
-    isListening = false;
-    voiceStatus.textContent = "";
-    voiceBtn.textContent = "开始语音";
-  };
-
-  recognition.onerror = () => {
-    voiceStatus.textContent = "语音识别失败，请再试一次";
-  };
-
-  recognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript;
-    voiceText.value = transcript;
-  };
-}
-
 function init() {
   chartDateInput.value = todayString();
   loadCategoryRules();
   loadEntries();
   renderEntries();
   renderSummary();
-  setupSpeech();
-  setupMobileTabs();
 }
 
 init();
-
-function setupMobileTabs() {
-  if (!mobileTabs) return;
-  const buttons = mobileTabs.querySelectorAll(".tab-btn");
-  let active = "list";
-
-  function setActive(target) {
-    active = target;
-    sectionCards.forEach((card) => {
-      const key = card.getAttribute("data-section");
-      if (key === active) {
-        card.classList.remove("section-hidden");
-      } else {
-        card.classList.add("section-hidden");
-      }
-    });
-    buttons.forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.target === active);
-    });
-  }
-
-  function applyLayout() {
-    const isMobile = window.matchMedia("(max-width: 480px)").matches;
-    if (isMobile) {
-      mobileTabs.classList.remove("is-hidden");
-      setActive(active);
-    } else {
-      mobileTabs.classList.add("is-hidden");
-      sectionCards.forEach((card) => card.classList.remove("section-hidden"));
-    }
-  }
-
-  buttons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      setActive(btn.dataset.target);
-    });
-  });
-
-  applyLayout();
-  window.addEventListener("resize", applyLayout);
-}

@@ -132,7 +132,6 @@ p {
   grid-template-columns: 1fr;
   grid-template-areas:
     "quick"
-    "tabs"
     "recommend"
     "summary"
     "chart"
@@ -207,36 +206,6 @@ p {
   grid-area: list;
 }
 
-.mobile-tabs {
-  grid-area: tabs;
-  display: flex;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 6px;
-  overflow-x: auto;
-}
-
-.tab-btn {
-  border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 12px;
-  background: transparent;
-}
-
-.tab-btn.active {
-  background: var(--accent);
-  color: white;
-}
-
-.is-hidden {
-  display: none !important;
-}
-
-.section-hidden {
-  display: none !important;
-}
 
 .summary-card {
   grid-area: summary;
@@ -281,10 +250,6 @@ p {
 
 .muted {
   color: var(--muted);
-}
-
-#voiceStatus:empty {
-  display: none;
 }
 
 textarea,
@@ -547,21 +512,32 @@ button:hover {
 }
 
 @media (max-width: 480px) {
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
   .bg-shapes {
     display: none;
   }
 
   .site-header {
-    padding: 16px 4vw 8px;
-    gap: 10px;
+    padding: calc(10px + env(safe-area-inset-top)) 4vw 6px;
+    gap: 8px;
   }
 
   .title-wrap h1 {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .subtitle {
     display: none;
+  }
+
+  .header-actions {
+    width: 100%;
   }
 
   .header-actions button {
@@ -570,8 +546,12 @@ button:hover {
   }
 
   .layout {
-    gap: 10px;
-    padding: 0 4vw 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 4vw calc(10px + env(safe-area-inset-bottom));
+    overflow: hidden;
   }
 
   .card {
@@ -585,7 +565,7 @@ button:hover {
   }
 
   .quick-card .card-title h2 {
-    font-size: 17px;
+    font-size: 16px;
   }
 
   .quick-card .muted {
@@ -595,34 +575,57 @@ button:hover {
   .voice-panel {
     padding: 8px;
     border-radius: 12px;
-  }
-
-  .voice-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-
-  .voice-row button {
-    width: 100%;
+    margin-bottom: 0;
   }
 
   textarea {
-    min-height: 38px;
+    min-height: 34px;
+    font-size: 13px;
   }
 
-  .chart-header {
-    gap: 8px;
+  .recommend-card .card-title p {
+    display: none;
   }
 
-  .entry-head {
+  .recommendation-box > *:not(:first-child) {
+    display: none;
+  }
+
+  .summary-card,
+  .chart-card {
+    display: none;
+  }
+
+  .list-card {
+    flex: 1;
+    display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    min-height: 0;
+  }
+
+  .list-card .card-title {
+    margin-bottom: 6px;
+  }
+
+  .entries-list {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .entry-item {
+    padding: 6px 8px;
+  }
+
+  .entry-tags {
+    font-size: 10px;
   }
 
   .entry-actions {
-    width: 100%;
     justify-content: flex-end;
+  }
+
+  .site-footer {
+    display: none;
   }
 }
 
