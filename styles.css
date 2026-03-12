@@ -1,17 +1,17 @@
 :root {
   color-scheme: light;
-  --bg: #f6f0e8;
-  --ink: #1f1b16;
-  --muted: #6d6259;
-  --accent: #d06b3d;
-  --accent-2: #2d6f6a;
-  --card: rgba(255, 255, 255, 0.76);
-  --border: rgba(31, 27, 22, 0.12);
-  --shadow: 0 20px 60px rgba(30, 24, 18, 0.14);
+  --bg: #f7eadb;
+  --ink: #3a261b;
+  --muted: #846b5a;
+  --accent: #d8845b;
+  --accent-2: #f2b37a;
+  --card: rgba(255, 251, 246, 0.9);
+  --border: rgba(105, 64, 40, 0.18);
+  --shadow: 0 20px 60px rgba(76, 46, 25, 0.16);
   --radius: 18px;
-  --pill-bg: rgba(255, 255, 255, 0.72);
-  --pill-border: rgba(31, 27, 22, 0.12);
-  --pill-text: #1f1b16;
+  --pill-bg: linear-gradient(135deg, rgba(255, 245, 235, 0.96), rgba(255, 231, 212, 0.96));
+  --pill-border: rgba(201, 137, 95, 0.35);
+  --pill-text: #6b3f24;
 }
 
 *,
@@ -25,7 +25,7 @@ body {
   font-family: "Noto Sans SC", "Source Han Sans SC", "PingFang SC",
     "Microsoft YaHei", sans-serif;
   color: var(--ink);
-  background: radial-gradient(circle at top left, #fff9f2 0%, #f6f0e8 40%, #efe4d6 100%);
+  background: radial-gradient(circle at top left, #fff6ea 0%, #f7eadb 38%, #f1ddc8 100%);
   min-height: 100vh;
   position: relative;
   overflow-x: hidden;
@@ -135,6 +135,7 @@ p {
   grid-template-columns: 1fr;
   grid-template-areas:
     "quick"
+    "current"
     "recommend"
     "summary"
     "chart"
@@ -195,6 +196,10 @@ p {
 
 .summary-card {
   grid-area: summary;
+}
+
+.current-card {
+  grid-area: current;
 }
 
 .chart-card {
@@ -332,7 +337,7 @@ button:hover {
 
 .summary-item {
   background: var(--pill-bg);
-  border-radius: 999px;
+  border-radius: 16px;
   padding: 10px 14px;
   border: 1px solid var(--pill-border);
   color: var(--pill-text);
@@ -341,13 +346,35 @@ button:hover {
 .recommendation-card {
   border-radius: 16px;
   padding: 12px 14px;
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--pill-bg);
   border: 1px solid var(--pill-border);
 }
 
 .recommendation-card strong {
   display: block;
   margin-bottom: 4px;
+}
+
+.current-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.current-pill {
+  background: var(--pill-bg);
+  border: 1px solid var(--pill-border);
+  border-radius: 16px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--pill-text);
+  font-size: 13px;
+}
+
+.current-pill strong {
+  font-size: 18px;
 }
 
 .chart-header {
@@ -499,7 +526,7 @@ button:hover {
 .badge {
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(31, 27, 22, 0.08);
+  background: rgba(255, 235, 218, 0.9);
   color: var(--pill-text);
   font-size: 9px;
 }
@@ -539,16 +566,12 @@ button:hover {
 .site-footer button,
 .quick-card button,
 .entry-actions button,
-.ghost {
+.ghost,
+.primary {
   border: 1px solid var(--pill-border);
   background: var(--pill-bg);
   color: var(--pill-text);
   box-shadow: none;
-}
-
-.quick-card button.primary {
-  background: var(--pill-bg);
-  color: var(--pill-text);
 }
 
 .quick-card button.primary:hover,
@@ -583,8 +606,7 @@ button:hover {
   }
 
   .site-header {
-    padding: calc(10px + env(safe-area-inset-top)) 4vw 6px;
-    gap: 8px;
+    display: none;
   }
 
   .title-wrap h1 {
@@ -729,6 +751,7 @@ button:hover {
     grid-template-columns: minmax(320px, 1.4fr) minmax(260px, 0.9fr);
     grid-template-areas:
       "quick summary"
+      "current summary"
       "list summary"
       "list chart"
       "list recommend";

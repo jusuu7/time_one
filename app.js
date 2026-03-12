@@ -5,6 +5,8 @@ const parseBtn = document.getElementById("parseBtn");
 const entriesList = document.getElementById("entriesList");
 const summaryBox = document.getElementById("summaryBox");
 const recommendationBox = document.getElementById("recommendationBox");
+const currentJoyEl = document.getElementById("currentJoy");
+const currentAchievementEl = document.getElementById("currentAchievement");
 const chartDateInput = document.getElementById("chartDate");
 const chartCanvas = document.getElementById("chartCanvas");
 const chartLegend = document.getElementById("chartLegend");
@@ -573,7 +575,22 @@ function renderSummary() {
     recommendationBox.appendChild(card);
   });
 
+  renderCurrentStats();
   renderDailyChart();
+}
+
+function renderCurrentStats() {
+  if (!currentJoyEl || !currentAchievementEl) return;
+  const now = Date.now();
+  const cutoff = now - 24 * 60 * 60 * 1000;
+  const recent = entries.filter((entry) => entry.endTs >= cutoff);
+  const joySum = recent.reduce((sum, entry) => sum + Number(entry.joy || 0), 0);
+  const achievementSum = recent.reduce(
+    (sum, entry) => sum + Number(entry.meaning || 0),
+    0
+  );
+  currentJoyEl.textContent = Math.round(100 + joySum);
+  currentAchievementEl.textContent = Math.round(100 + achievementSum);
 }
 
 function renderDailyChart() {
