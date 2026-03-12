@@ -1,4 +1,4 @@
-const STORAGE_KEY = "time_log_entries_v1";
+﻿const STORAGE_KEY = "time_log_entries_v1";
 
 const voiceText = document.getElementById("voiceText");
 const parseBtn = document.getElementById("parseBtn");
@@ -260,27 +260,83 @@ function inferCategory(text) {
 }
 
 function parseTimeRange(normalized) {
-  const colonRegex = /(\d{1,2})[:](\d{2})\s*[~\-到至]\s*(\d{1,2})[:](\d{2})/;
+  const colonRegex = /(\d{1,2})[:：](\d{1,2})\s*[~\-到至]\s*(\d{1,2})[:：](\d{1,2})/;
   const colonMatch = normalized.match(colonRegex);
   if (colonMatch) {
     return {
-      start: `${pad(Number(colonMatch[1]))}:${colonMatch[2]}`,
-      end: `${pad(Number(colonMatch[3]))}:${colonMatch[4]}`,
+      start: `${pad(Number(colonMatch[1]))}:${pad(Number(colonMatch[2]))}`,
+      end: `${pad(Number(colonMatch[3]))}:${pad(Number(colonMatch[4]))}`,
       rawRegex: colonRegex,
     };
   }
 
-  const dotRegex =
-    /(\d{1,2})\s*点\s*(\d{1,2})?\s*分?\s*[~\-到至]\s*(\d{1,2})\s*点\s*(\d{1,2})?\s*分?/;
-  const dotMatch = normalized.match(dotRegex);
-  if (dotMatch) {
-    const startMin = dotMatch[2] ? pad(Number(dotMatch[2])) : "00";
-    const endMin = dotMatch[4] ? pad(Number(dotMatch[4])) : "00";
-    return {
-      start: `${pad(Number(dotMatch[1]))}:${startMin}`,
-      end: `${pad(Number(dotMatch[3]))}:${endMin}`,
-      rawRegex: dotRegex,
-    };
+  const tokenPattern =
+    "(\\d{1,2}:\\d{1,2}|\\d{1,2}点半|\\d{1,2}点\\d{1,2}分?|\\d{1,2}\\.\\d{1,2}分?|\\d{1,2}点)";
+  const relaxedRegex = new RegExp(
+    `${tokenPattern}\\s*[~\\-到至]\\s*${tokenPattern}`
+  );
+  const relaxedMatch = normalized.match(relaxedRegex);
+  if (relaxedMatch) {
+    const start = parseTimeToken(relaxedMatch[1]);
+    const end = parseTimeToken(relaxedMatch[2]);
+    if (start && end) {
+      return {
+        start,
+        end,
+        rawText: relaxedMatch[0],
+      };
+    }
+  }
+
+  return null;
+}
+
+function parseTimeToken(token) {
+  if (!token) return null;
+  let raw = String(token).trim();
+  raw = raw.replace(/：/g, ":");
+  raw = raw.replace(/\s+/g, "");
+  raw = raw.replace(/点半/g, "点30分");
+
+  if (/^\d{1,2}:\d{1,2}$/.test(raw)) {
+    const [h, m] = raw.split(":").map(Number);
+    if (m >= 0 && m < 60) {
+      return `${pad(h)}:${pad(m)}`;
+    }
+    return null;
+  }
+
+  if (raw.includes("点")) {
+    const [hourPart, restPart = ""] = raw.split("点");
+    const hour = Number(hourPart);
+    if (!Number.isFinite(hour)) return null;
+    let minute = 0;
+    let rest = restPart.replace("分", "");
+    if (rest.includes(".")) {
+      const parts = rest.split(".");
+      rest = parts[1] || parts[0] || "0";
+    }
+    if (rest) {
+      minute = Number(rest);
+    }
+    if (minute >= 0 && minute < 60) {
+      return `${pad(hour)}:${pad(minute)}`;
+    }
+    return null;
+  }
+
+  if (/^\d{1,2}\.\d{1,2}分?$/.test(raw)) {
+    const [h, mRaw] = raw.replace("分", "").split(".");
+    const hour = Number(h);
+    const minute = Number(mRaw);
+    if (Number.isFinite(hour) && minute >= 0 && minute < 60) {
+      return `${pad(hour)}:${pad(minute)}`;
+    }
+  }
+
+  if (/^\d{1,2}$/.test(raw)) {
+    const hour = Number(raw);
+    return `${pad(hour)}:00`;
   }
 
   return null;
@@ -297,8 +353,13 @@ function parseEntryFromText(text) {
 
   const scorePattern =
     /(快乐|成就|意义)值?\s*([0-9]{1,2}|[一二三四五六七八九十])/g;
-  let activityText = normalized
-    .replace(parsedTime?.rawRegex || /$^/, "")
+  let activityText = normalized;
+  if (parsedTime?.rawRegex) {
+    activityText = activityText.replace(parsedTime.rawRegex, "");
+  } else if (parsedTime?.rawText) {
+    activityText = activityText.replace(parsedTime.rawText, "");
+  }
+  activityText = activityText
     .replace(scorePattern, "")
     .replace(/然后|接着|之后|再|并且|就是/g, "")
     .replace(/[,.，。;；]/g, " ")
