@@ -471,6 +471,80 @@ button:hover {
 }
 
 @media (max-width: 720px) {
+  .site-header {
+    padding: 24px 5vw 12px;
+  }
+
+  .title-wrap h1 {
+    font-size: 22px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+  }
+
+  .header-actions {
+    gap: 8px;
+  }
+
+  .header-actions button {
+    flex: 1 1 auto;
+  }
+
+  .layout {
+    padding: 0 5vw 20px;
+    gap: 16px;
+  }
+
+  .main-stack {
+    gap: 14px;
+  }
+
+  .card {
+    padding: 14px;
+  }
+
+  .quick-card {
+    padding: 12px;
+  }
+
+  .quick-card .card-title h2 {
+    font-size: 17px;
+  }
+
+  .voice-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .voice-row button {
+    width: 100%;
+  }
+
+  .voice-panel textarea {
+    min-height: 56px;
+  }
+
+  .chart-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  #chartSummary {
+    font-size: 12px;
+  }
+
+  .entry-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .entry-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
   .rule-row {
     grid-template-columns: 1fr;
   }
