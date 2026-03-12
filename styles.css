@@ -511,6 +511,18 @@ button:hover {
   z-index: 1;
 }
 
+.footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.footer-actions button {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
 @media (max-width: 480px) {
   body {
     display: flex;
@@ -625,7 +637,22 @@ button:hover {
   }
 
   .site-footer {
-    display: none;
+    margin-top: auto;
+    padding: 6px 4vw calc(6px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.9);
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+  }
+
+  .footer-actions {
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .footer-actions button {
+    flex: 1 1 calc(50% - 6px);
+    padding: 6px 8px;
+    font-size: 11px;
   }
 }
 

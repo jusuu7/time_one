@@ -15,16 +15,9 @@
 
     <header class="site-header">
       <div class="title-wrap">
-        <p class="eyebrow">Time · Joy · Meaning</p>
-        <h1>时间记录与 AI 建议</h1>
-        <p class="subtitle">
-          每次活动记录一次，系统会汇总你的数据，并在保存后给出下一步推荐。
-        </p>
-      </div>
-      <div class="header-actions">
-        <button id="categoryBtn" class="ghost">分类设置</button>
-        <button id="exportBtn" class="ghost">导出数据</button>
-        <button id="clearBtn" class="danger">清空记录</button>
+        <p class="eyebrow">TIME · ARCHIVE</p>
+        <h1>时光存档</h1>
+        <p class="subtitle">每一刻，好好存起来</p>
       </div>
     </header>
 
@@ -32,14 +25,14 @@
         <section class="card quick-card">
         <div class="card-title">
           <h2>快速记录</h2>
-          <p>输入一行记录，自动解析时间、活动、快乐值、意义值。</p>
+          <p>输入一行记录，自动解析时间、活动、快乐值、成就值。</p>
         </div>
 
         <div class="voice-panel">
           <textarea
             id="voiceText"
             rows="2"
-            placeholder="例如：16:50~17:40 吃饭 快乐3 意义3"
+            placeholder="例如：16:50~17:40 吃饭 快乐3 成就3"
           ></textarea>
           <button id="parseBtn" class="primary">保存记录</button>
         </div>
@@ -86,7 +79,14 @@
     </main>
 
     <footer class="site-footer">
-      <p>数据仅保存在本地浏览器（LocalStorage）。后续可接入真实 AI 服务。</p>
+      <div class="footer-actions">
+        <button id="categoryBtn" class="ghost">分类设置</button>
+        <button id="importBtn" class="ghost">导入记录</button>
+        <button id="exportBtn" class="ghost">导出记录</button>
+        <button id="clearBtn" class="danger">清空记录</button>
+      </div>
+      <input id="importFile" type="file" accept="application/json" class="is-hidden" />
+      <p>数据仅保存在本地浏览器（LocalStorage）。</p>
     </footer>
 
     <div id="categoryModal" class="modal hidden" role="dialog" aria-modal="true">

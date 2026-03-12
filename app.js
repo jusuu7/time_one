@@ -16,6 +16,8 @@ const categoryRulesList = document.getElementById("categoryRulesList");
 const addCategoryRuleBtn = document.getElementById("addCategoryRule");
 const saveCategoryRulesBtn = document.getElementById("saveCategoryRules");
 const resetCategoryRulesBtn = document.getElementById("resetCategoryRules");
+const importBtn = document.getElementById("importBtn");
+const importFile = document.getElementById("importFile");
 const exportBtn = document.getElementById("exportBtn");
 const clearBtn = document.getElementById("clearBtn");
 
@@ -278,9 +280,11 @@ function parseEntryFromText(text) {
 
   const parsedTime = parseTimeRange(normalized);
   const joyValue = parseScore(normalized, "快乐");
-  const meaningValue = parseScore(normalized, "意义");
+  const achievementValue =
+    parseScore(normalized, "成就") ?? parseScore(normalized, "意义");
 
-  const scorePattern = /(快乐|意义)值?\s*([0-9]{1,2}|[一二三四五六七八九十])/g;
+  const scorePattern =
+    /(快乐|成就|意义)值?\s*([0-9]{1,2}|[一二三四五六七八九十])/g;
   let activityText = normalized
     .replace(parsedTime?.rawRegex || /$^/, "")
     .replace(scorePattern, "")
@@ -292,7 +296,7 @@ function parseEntryFromText(text) {
   if (!parsedTime) errors.push("缺少时间段（例如 16:50~17:40）");
   if (!activityText) errors.push("缺少活动内容");
   if (joyValue == null) errors.push("缺少快乐值");
-  if (meaningValue == null) errors.push("缺少意义值");
+  if (achievementValue == null) errors.push("缺少成就值");
 
   if (errors.length) {
     return { errors };
@@ -303,7 +307,7 @@ function parseEntryFromText(text) {
     end: parsedTime.end,
     activity: activityText,
     joy: joyValue,
-    meaning: meaningValue,
+    meaning: achievementValue,
   };
 }
 
@@ -416,7 +420,7 @@ function makeSummary(entries7) {
     `近 7 天共记录 ${entries7.length} 次，总时长 ${(
       totalMinutes / 60
     ).toFixed(1)} 小时。`,
-    `平均快乐值 ${avgJoy.toFixed(1)}，平均意义值 ${avgMeaning.toFixed(1)}。`,
+    `平均快乐值 ${avgJoy.toFixed(1)}，平均成就值 ${avgMeaning.toFixed(1)}。`,
     topCategory
       ? `最常出现的类别是「${topCategory[0]}」，出现 ${topCategory[1]} 次。`
       : "暂未形成明显类别偏好。",
@@ -506,8 +510,8 @@ function buildRecommendations(allEntries, entries7) {
     const topMeaning = pick(sortedByMeaning);
     if (topMeaning) {
       recommendations.push({
-        title: `补一点意义：${topMeaning.activity}`,
-        detail: `历史平均意义 ${topMeaning.avgMeaning.toFixed(
+        title: `补一点成就：${topMeaning.activity}`,
+        detail: `历史平均成就 ${topMeaning.avgMeaning.toFixed(
           1
         )}，建议时长约 ${Math.round(topMeaning.avgDuration)} 分钟。`,
       });
@@ -536,7 +540,7 @@ function buildRecommendations(allEntries, entries7) {
   if (topMeaning) {
     recommendations.push({
       title: `长期收益：${topMeaning.activity}`,
-      detail: `历史意义高，适合安排在精力较好的时段。`,
+      detail: `历史成就高，适合安排在精力较好的时段。`,
     });
   }
 
@@ -680,7 +684,7 @@ function renderEntries() {
         <span>${entry.start} - ${entry.end}</span>
         <span>用时 ${entry.durationMin} 分钟</span>
         <span>快乐 ${entry.joy}</span>
-        <span>意义 ${entry.meaning}</span>
+        <span>成就 ${entry.meaning}</span>
       </div>
     `;
     entriesList.appendChild(item);
@@ -689,7 +693,7 @@ function renderEntries() {
 
 function setEditorFromEntry(entry) {
   if (!entry) return;
-  voiceText.value = `${entry.start}~${entry.end}，${entry.activity}，快乐${entry.joy}，意义${entry.meaning}`;
+  voiceText.value = `${entry.start}~${entry.end} ${entry.activity} 快乐${entry.joy} 成就${entry.meaning}`;
 }
 
 function handleParseAndSave() {
@@ -849,6 +853,93 @@ exportBtn.addEventListener("click", () => {
   a.download = `time-log-${todayString()}.json`;
   a.click();
   URL.revokeObjectURL(url);
+});
+
+importBtn.addEventListener("click", () => {
+  if (importFile) importFile.click();
+});
+
+importFile.addEventListener("change", (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(String(reader.result || "[]"));
+      if (!Array.isArray(parsed)) throw new Error("Invalid JSON");
+
+      const normalized = parsed
+        .map((item) => {
+          if (!item) return null;
+          const activity = String(item.activity || "").trim();
+          const start = String(item.start || "").trim();
+          const end = String(item.end || "").trim();
+          const date = String(item.date || "").trim() || todayString();
+          const joy = Number(item.joy ?? item.happy ?? item.happiness);
+          const meaningRaw =
+            item.meaning ?? item.achievement ?? item.成就 ?? item["成就"];
+          const meaning = Number(meaningRaw);
+          if (!activity || !start || !end || !Number.isFinite(joy) || !Number.isFinite(meaning)) {
+            return null;
+          }
+          const durationMin = computeDuration(start, end);
+          if (!durationMin || durationMin <= 0) return null;
+
+          const startDate = buildDateTime(date, start);
+          const endDate =
+            timeToMinutes(end) >= timeToMinutes(start)
+              ? buildDateTime(date, end)
+              : buildDateTime(date, end, 1);
+
+          return {
+            id: item.id || generateId(),
+            date,
+            start,
+            end,
+            activity,
+            category: inferCategory(activity) || item.category || "其他",
+            joy,
+            meaning,
+            durationMin,
+            startTs: item.startTs || startDate.getTime(),
+            endTs: item.endTs || endDate.getTime(),
+            updatedAt: Date.now(),
+          };
+        })
+        .filter(Boolean);
+
+      if (!normalized.length) {
+        alert("导入失败：没有可用记录。");
+        return;
+      }
+
+      const overwrite = confirm("是否覆盖当前记录？点击取消将合并导入。");
+      if (overwrite) {
+        entries = normalized;
+      } else {
+        const existingIds = new Set(entries.map((e) => e.id));
+        const merged = [...entries];
+        normalized.forEach((item) => {
+          if (existingIds.has(item.id)) {
+            merged.push({ ...item, id: generateId() });
+          } else {
+            merged.push(item);
+          }
+        });
+        entries = merged;
+      }
+
+      saveEntries();
+      renderEntries();
+      renderSummary();
+      alert("导入完成。");
+    } catch (err) {
+      alert("导入失败：文件格式不正确。");
+    } finally {
+      importFile.value = "";
+    }
+  };
+  reader.readAsText(file);
 });
 
 clearBtn.addEventListener("click", () => {
