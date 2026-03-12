@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>时间记录与推荐</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg-shapes" aria-hidden="true">
+      <span class="blob blob-1"></span>
+      <span class="blob blob-2"></span>
+      <span class="grid"></span>
+    </div>
+
+    <header class="site-header">
+      <div class="title-wrap">
+        <p class="eyebrow">Time · Joy · Meaning</p>
+        <h1>时间记录与 AI 建议</h1>
+        <p class="subtitle">
+          每次活动记录一次，系统会汇总你的数据，并在保存后给出下一步推荐。
+        </p>
+      </div>
+      <div class="header-actions">
+        <button id="categoryBtn" class="ghost">分类设置</button>
+        <button id="exportBtn" class="ghost">导出数据</button>
+        <button id="clearBtn" class="danger">清空记录</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <div class="main-stack">
+        <section class="card quick-card">
+        <div class="card-title">
+          <h2>快速记录</h2>
+          <p>支持语音输入，自动解析时间、活动、快乐值、意义值。</p>
+        </div>
+
+        <div class="voice-panel">
+          <div class="voice-row">
+            <button id="voiceBtn" class="primary">开始语音</button>
+            <span id="voiceStatus" class="muted"></span>
+          </div>
+          <textarea
+            id="voiceText"
+            rows="2"
+            placeholder="例如：16:50~17:40，吃饭，然后快乐值3意义3"
+          ></textarea>
+          <button id="parseBtn" class="ghost">解析语音文本</button>
+        </div>
+
+        <p class="muted">输入后点击“解析语音文本”，系统会自动保存并归类。</p>
+        </section>
+
+        <section class="card list-card">
+          <div class="card-title">
+            <h2>记录列表</h2>
+            <p>按时间倒序排列，可编辑或删除。</p>
+          </div>
+          <div id="entriesList" class="entries-list"></div>
+        </section>
+      </div>
+
+      <aside class="side-stack">
+        <section class="card">
+          <div class="card-title">
+            <h2>AI 总结</h2>
+            <p>基于你最近 7 天的记录自动更新。</p>
+          </div>
+          <div id="summaryBox" class="summary-box"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-title">
+            <h2>每日时间分布</h2>
+            <p>查看某一天在各类别上的时间占比。</p>
+          </div>
+          <div class="chart-header">
+            <input type="date" id="chartDate" />
+            <span id="chartSummary" class="muted"></span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chartCanvas" width="240" height="240"></canvas>
+            <div id="chartLegend" class="chart-legend"></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-title">
+            <h2>下一步推荐</h2>
+            <p>保存记录后自动刷新。</p>
+          </div>
+          <div id="recommendationBox" class="recommendation-box"></div>
+        </section>
+      </aside>
+    </main>
+
+    <footer class="site-footer">
+      <p>数据仅保存在本地浏览器（LocalStorage）。后续可接入真实 AI 服务。</p>
+    </footer>
+
+    <div id="categoryModal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-content card">
+        <div class="modal-head">
+          <h2>分类规则</h2>
+          <button id="closeCategoryModal" class="ghost">关闭</button>
+        </div>
+        <p class="muted">给每个类别设置关键词，系统会自动匹配活动内容。</p>
+        <div id="categoryRulesList" class="rules-list"></div>
+        <div class="rules-actions">
+          <button id="addCategoryRule" class="ghost">新增类别</button>
+          <button id="resetCategoryRules" class="ghost">恢复默认</button>
+          <button id="saveCategoryRules" class="primary">保存规则</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
