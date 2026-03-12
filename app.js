@@ -20,6 +20,8 @@ const saveCategoryRulesBtn = document.getElementById("saveCategoryRules");
 const resetCategoryRulesBtn = document.getElementById("resetCategoryRules");
 const exportBtn = document.getElementById("exportBtn");
 const clearBtn = document.getElementById("clearBtn");
+const mobileTabs = document.getElementById("mobileTabs");
+const sectionCards = document.querySelectorAll("[data-section]");
 
 let entries = [];
 let editingId = null;
@@ -912,6 +914,48 @@ function init() {
   renderEntries();
   renderSummary();
   setupSpeech();
+  setupMobileTabs();
 }
 
 init();
+
+function setupMobileTabs() {
+  if (!mobileTabs) return;
+  const buttons = mobileTabs.querySelectorAll(".tab-btn");
+  let active = "list";
+
+  function setActive(target) {
+    active = target;
+    sectionCards.forEach((card) => {
+      const key = card.getAttribute("data-section");
+      if (key === active) {
+        card.classList.remove("section-hidden");
+      } else {
+        card.classList.add("section-hidden");
+      }
+    });
+    buttons.forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.target === active);
+    });
+  }
+
+  function applyLayout() {
+    const isMobile = window.matchMedia("(max-width: 480px)").matches;
+    if (isMobile) {
+      mobileTabs.classList.remove("is-hidden");
+      setActive(active);
+    } else {
+      mobileTabs.classList.add("is-hidden");
+      sectionCards.forEach((card) => card.classList.remove("section-hidden"));
+    }
+  }
+
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      setActive(btn.dataset.target);
+    });
+  });
+
+  applyLayout();
+  window.addEventListener("resize", applyLayout);
+}

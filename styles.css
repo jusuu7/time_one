@@ -132,6 +132,7 @@ p {
   grid-template-columns: 1fr;
   grid-template-areas:
     "quick"
+    "tabs"
     "recommend"
     "summary"
     "chart"
@@ -188,6 +189,53 @@ p {
 
 .quick-card .muted {
   font-size: 12px;
+}
+
+.summary-card {
+  grid-area: summary;
+}
+
+.chart-card {
+  grid-area: chart;
+}
+
+.recommend-card {
+  grid-area: recommend;
+}
+
+.list-card {
+  grid-area: list;
+}
+
+.mobile-tabs {
+  grid-area: tabs;
+  display: flex;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px;
+  overflow-x: auto;
+}
+
+.tab-btn {
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  background: transparent;
+}
+
+.tab-btn.active {
+  background: var(--accent);
+  color: white;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+.section-hidden {
+  display: none !important;
 }
 
 .summary-card {
@@ -496,6 +544,86 @@ button:hover {
   font-size: 14px;
   position: relative;
   z-index: 1;
+}
+
+@media (max-width: 480px) {
+  .bg-shapes {
+    display: none;
+  }
+
+  .site-header {
+    padding: 16px 4vw 8px;
+    gap: 10px;
+  }
+
+  .title-wrap h1 {
+    font-size: 20px;
+  }
+
+  .subtitle {
+    display: none;
+  }
+
+  .header-actions button {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+
+  .layout {
+    gap: 10px;
+    padding: 0 4vw 16px;
+  }
+
+  .card {
+    padding: 10px;
+    box-shadow: none;
+    border-radius: 12px;
+  }
+
+  .quick-card {
+    padding: 10px;
+  }
+
+  .quick-card .card-title h2 {
+    font-size: 17px;
+  }
+
+  .quick-card .muted {
+    display: none;
+  }
+
+  .voice-panel {
+    padding: 8px;
+    border-radius: 12px;
+  }
+
+  .voice-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .voice-row button {
+    width: 100%;
+  }
+
+  textarea {
+    min-height: 38px;
+  }
+
+  .chart-header {
+    gap: 8px;
+  }
+
+  .entry-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .entry-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
 
 @media (min-width: 960px) {
