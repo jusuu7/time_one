@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>记住你的快乐</title>
-    <link rel="stylesheet" href="styles.css?v=20260312-5" />
+    <link rel="stylesheet" href="styles.css?v=20260312-6" />
   </head>
   <body>
     <div class="bg-shapes" aria-hidden="true">
@@ -26,7 +26,17 @@
             <p>保存记录后自动刷新。</p>
           </div>
           <div id="recommendationBox" class="recommendation-box"></div>
-          <button id="aiQuickBtn" class="ghost ai-quick-btn">AI设置</button>
+        </section>
+
+        <section class="card quick-card">
+        <div class="voice-panel">
+          <textarea
+            id="voiceText"
+            rows="2"
+            placeholder="例如：16:50~17:55 备菜 快乐3 价值4"
+          ></textarea>
+          <button id="parseBtn" class="primary">时光存档</button>
+        </div>
         </section>
 
         <section class="card current-card" data-section="current">
@@ -47,23 +57,16 @@
           <p id="currentHint" class="muted"></p>
         </section>
 
-        <section class="card quick-card">
-        <div class="voice-panel">
-          <textarea
-            id="voiceText"
-            rows="2"
-            placeholder="例如：16:50~17:55 备菜 快乐3 价值4"
-          ></textarea>
-          <button id="parseBtn" class="primary">时光存档</button>
-        </div>
-        </section>
-
-        <section class="card summary-card" data-section="summary">
+        <section class="card assistant-card" data-section="assistant">
           <div class="card-title">
-            <h2><span class="section-icon icon-summary" aria-hidden="true"></span>AI 总结</h2>
-            <p>基于你最近 7 天的记录自动更新。</p>
+            <h2><span class="section-icon icon-summary" aria-hidden="true"></span>AI助手</h2>
+            <p>可基于你的记录做对话建议。</p>
           </div>
-          <div id="summaryBox" class="summary-box"></div>
+          <div id="aiChatLog" class="ai-chat-log"></div>
+          <div class="ai-chat-form">
+            <input id="aiChatInput" type="text" placeholder="例如：我现在适合做什么？" />
+            <button id="aiChatSend" class="primary">发送</button>
+          </div>
         </section>
 
         <section class="card list-card" data-section="list">
@@ -149,6 +152,6 @@
       </div>
     </div>
 
-    <script src="app.js?v=20260312-5"></script>
+    <script src="app.js?v=20260312-6"></script>
   </body>
 </html>

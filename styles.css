@@ -111,10 +111,10 @@ h2 {
   grid-template-columns: 1fr;
   grid-template-areas:
     "recommend"
-    "current"
     "quick"
-    "list"
-    "summary";
+    "current"
+    "assistant"
+    "list";
   gap: 12px;
   padding: 8px 0 20px;
 }
@@ -145,9 +145,8 @@ h2 {
   grid-area: list;
 }
 
-.summary-card {
-  grid-area: summary;
-  display: none;
+.assistant-card {
+  grid-area: assistant;
 }
 
 .voice-panel {
@@ -274,7 +273,6 @@ button:hover {
   color: #7c5948;
 }
 
-.summary-box,
 .recommendation-box {
   display: grid;
   gap: 8px;
@@ -295,11 +293,6 @@ button:hover {
   font-size: 20px;
   margin-bottom: 4px;
   letter-spacing: 0.3px;
-}
-
-.ai-quick-btn {
-  margin-top: 8px;
-  width: 100%;
 }
 
 .current-grid {
@@ -357,6 +350,54 @@ button:hover {
   margin-top: 8px;
   color: var(--muted);
   font-size: 13px;
+}
+
+.ai-chat-log {
+  min-height: 120px;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid rgba(186, 145, 120, 0.26);
+  border-radius: 14px;
+  padding: 8px;
+  background: rgba(255, 253, 250, 0.78);
+  display: grid;
+  gap: 8px;
+}
+
+.ai-chat-item {
+  max-width: 100%;
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  border: 1px solid var(--pill-border);
+}
+
+.ai-chat-item.user {
+  justify-self: end;
+  background: linear-gradient(135deg, rgba(236, 160, 118, 0.35), rgba(242, 196, 164, 0.4));
+}
+
+.ai-chat-item.assistant {
+  justify-self: start;
+  background: rgba(255, 244, 232, 0.9);
+}
+
+.ai-chat-meta {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.ai-chat-form {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.ai-chat-form button {
+  min-width: 68px;
 }
 
 .card-title-row {
@@ -548,16 +589,8 @@ button:hover {
     font-size: 13px;
   }
 
-  .summary-card {
-    display: none;
-  }
-
   .recommendation-box > *:not(:first-child) {
     display: none;
-  }
-
-  .ai-quick-btn {
-    margin-top: 6px;
   }
 
   .entry-head strong {
@@ -579,19 +612,15 @@ button:hover {
     width: min(1180px, 90vw);
     grid-template-columns: minmax(520px, 1.15fr) minmax(320px, 0.85fr);
     grid-template-areas:
-      "recommend summary"
-      "current summary"
-      "quick summary"
-      "list summary";
+      "recommend assistant"
+      "quick assistant"
+      "current assistant"
+      "list assistant";
     gap: 18px;
   }
 
   .card {
     padding: 20px;
-  }
-
-  .summary-card {
-    display: block;
   }
 
   .site-footer {
@@ -601,18 +630,16 @@ button:hover {
     padding-bottom: 24px;
   }
 
-  .summary-box,
   .recommendation-box {
     gap: 10px;
   }
 
-  .ai-quick-btn {
-    width: auto;
-    margin-top: 10px;
-  }
-
   .current-pill strong {
     font-size: 24px;
+  }
+
+  .ai-chat-log {
+    max-height: 440px;
   }
 }
 

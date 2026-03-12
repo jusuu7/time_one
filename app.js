@@ -3,12 +3,13 @@ const STORAGE_KEY = "time_log_entries_v1";
 const voiceText = document.getElementById("voiceText");
 const parseBtn = document.getElementById("parseBtn");
 const entriesList = document.getElementById("entriesList");
-const summaryBox = document.getElementById("summaryBox");
 const recommendationBox = document.getElementById("recommendationBox");
+const aiChatLog = document.getElementById("aiChatLog");
+const aiChatInput = document.getElementById("aiChatInput");
+const aiChatSend = document.getElementById("aiChatSend");
 const currentJoyEl = document.getElementById("currentJoy");
 const currentAchievementEl = document.getElementById("currentAchievement");
 const currentHintEl = document.getElementById("currentHint");
-const aiQuickBtn = document.getElementById("aiQuickBtn");
 const listToggleBtn = document.getElementById("listToggleBtn");
 const listCard = document.querySelector(".list-card");
 const categoryBtn = document.getElementById("categoryBtn");
@@ -43,6 +44,7 @@ const LIST_COLLAPSE_KEY = "time_log_list_collapsed_v1";
 
 const RULES_KEY = "time_log_category_rules_v1";
 const AI_SETTINGS_KEY = "time_log_ai_settings_v1";
+const AI_CHAT_KEY = "time_log_ai_chat_v1";
 const DEFAULT_AI_SETTINGS = {
   enabled: false,
   baseUrl: "",
@@ -52,6 +54,7 @@ const DEFAULT_AI_SETTINGS = {
 
 let aiSettings = { ...DEFAULT_AI_SETTINGS };
 let aiRecommendRequestId = 0;
+let aiChatHistory = [];
 
 const CATEGORY_COLORS = {
   学习: "#2f7a6d",
@@ -224,6 +227,31 @@ function loadAiSettings() {
 
 function saveAiSettings() {
   localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(aiSettings));
+}
+
+function loadAiChatHistory() {
+  try {
+    const raw = localStorage.getItem(AI_CHAT_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) {
+      aiChatHistory = [];
+      return;
+    }
+    aiChatHistory = parsed
+      .filter((item) => item && (item.role === "user" || item.role === "assistant"))
+      .map((item) => ({
+        role: item.role,
+        content: String(item.content || "").trim(),
+        ts: Number(item.ts || Date.now()),
+      }))
+      .filter((item) => item.content);
+  } catch (err) {
+    aiChatHistory = [];
+  }
+}
+
+function saveAiChatHistory() {
+  localStorage.setItem(AI_CHAT_KEY, JSON.stringify(aiChatHistory.slice(-40)));
 }
 
 function resetCategoryRules() {
@@ -722,15 +750,6 @@ function renderSummary() {
   const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
   const entries7 = entries.filter((e) => e.endTs >= sevenDaysAgo);
 
-  const summaryLines = makeSummary(entries7);
-  summaryBox.innerHTML = "";
-  summaryLines.forEach((line) => {
-    const item = document.createElement("div");
-    item.className = "summary-item";
-    item.textContent = line;
-    summaryBox.appendChild(item);
-  });
-
   const recommendations = buildRecommendations(entries, entries7);
   recommendationBox.innerHTML = "";
   recommendations.forEach((rec) => {
@@ -850,6 +869,107 @@ function parseAiResponse(content) {
     title: "AI 推荐",
     detail: raw.replace(/\s+/g, " ").slice(0, 120),
   };
+}
+
+function pushAiChatMessage(role, content) {
+  const text = String(content || "").trim();
+  if (!text) return;
+  aiChatHistory.push({ role, content: text, ts: Date.now() });
+  aiChatHistory = aiChatHistory.slice(-40);
+  saveAiChatHistory();
+}
+
+function renderAiChat() {
+  if (!aiChatLog) return;
+  aiChatLog.innerHTML = "";
+
+  if (!aiChatHistory.length) {
+    const empty = document.createElement("div");
+    empty.className = "ai-chat-item assistant";
+    empty.innerHTML =
+      `<div class="ai-chat-meta">AI助手</div><div>你好，我会基于你的记录提供建议。可以问我“现在做什么更合适？”</div>`;
+    aiChatLog.appendChild(empty);
+    return;
+  }
+
+  aiChatHistory.forEach((item) => {
+    const bubble = document.createElement("div");
+    bubble.className = `ai-chat-item ${item.role}`;
+    const roleName = item.role === "user" ? "你" : "AI助手";
+    bubble.innerHTML = `<div class="ai-chat-meta">${roleName}</div><div>${item.content}</div>`;
+    aiChatLog.appendChild(bubble);
+  });
+
+  aiChatLog.scrollTop = aiChatLog.scrollHeight;
+}
+
+function buildAiRecordContext() {
+  const sortedEntries = [...entries].sort((a, b) => b.endTs - a.endTs).slice(0, 30);
+  const lines = sortedEntries.map((entry) => {
+    const category = getEntryCategory(entry);
+    return `${entry.date} ${entry.start}-${entry.end} ${entry.activity} 类别:${category} 快乐:${entry.joy} 价值:${entry.meaning} 时长:${entry.durationMin}`;
+  });
+  const { recent24, prev24 } = getComparisonStats();
+  const weekCount = entries.filter(
+    (entry) => entry.endTs >= Date.now() - 7 * 24 * 60 * 60 * 1000
+  ).length;
+  return {
+    lines,
+    weekCount,
+    recent24,
+    prev24,
+  };
+}
+
+async function requestAiChatReply(userMessage) {
+  if (!isAiConfigured()) {
+    return "请先在“更多设置 -> AI 设置”中配置接口地址、模型和 API Key。";
+  }
+  const endpoint = `${aiSettings.baseUrl.replace(/\/+$/, "")}/chat/completions`;
+  const context = buildAiRecordContext();
+  const recentHistory = aiChatHistory.slice(-12).map((item) => ({
+    role: item.role,
+    content: item.content,
+  }));
+
+  const contextPrompt = [
+    `最近7天记录数:${context.weekCount}`,
+    `近24小时快乐:${context.recent24.joy} 价值:${context.recent24.achievement}`,
+    `较前24小时快乐变化:${context.recent24.joy - context.prev24.joy} 价值变化:${
+      context.recent24.achievement - context.prev24.achievement
+    }`,
+    "最近记录：",
+    ...context.lines,
+  ].join("\n");
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${aiSettings.apiKey}`,
+    },
+    body: JSON.stringify({
+      model: aiSettings.model,
+      temperature: 0.7,
+      messages: [
+        {
+          role: "system",
+          content:
+            "你是时间记录助手，回答简洁、具体，优先基于用户最近一周记录与最近24小时状态给建议。",
+        },
+        { role: "system", content: contextPrompt },
+        ...recentHistory,
+        { role: "user", content: userMessage },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`AI 请求失败(${response.status})`);
+  }
+  const data = await response.json();
+  const content = String(data?.choices?.[0]?.message?.content || "").trim();
+  return content || "我暂时没有得到有效回复，你可以换个问法再试。";
 }
 
 async function requestAiRecommendation(entries7, localRecommendations) {
@@ -1102,12 +1222,6 @@ aiSettingsBtn?.addEventListener("click", () => {
   aiModal?.classList.remove("hidden");
 });
 
-aiQuickBtn?.addEventListener("click", () => {
-  if (toolsModal) toolsModal.classList.add("hidden");
-  fillAiSettingsForm();
-  aiModal?.classList.remove("hidden");
-});
-
 closeAiModal?.addEventListener("click", () => {
   aiModal?.classList.add("hidden");
 });
@@ -1124,6 +1238,44 @@ saveAiSettingsBtn?.addEventListener("click", () => {
   aiModal?.classList.add("hidden");
   renderSummary();
   alert("AI 设置已保存。");
+});
+
+async function handleAiChatSend() {
+  const question = String(aiChatInput?.value || "").trim();
+  if (!question) return;
+  aiChatInput.value = "";
+  pushAiChatMessage("user", question);
+  renderAiChat();
+
+  const loadingText = "正在思考中...";
+  pushAiChatMessage("assistant", loadingText);
+  renderAiChat();
+
+  try {
+    const answer = await requestAiChatReply(question);
+    if (aiChatHistory.length && aiChatHistory[aiChatHistory.length - 1].content === loadingText) {
+      aiChatHistory.pop();
+    }
+    pushAiChatMessage("assistant", answer);
+  } catch (err) {
+    if (aiChatHistory.length && aiChatHistory[aiChatHistory.length - 1].content === loadingText) {
+      aiChatHistory.pop();
+    }
+    pushAiChatMessage("assistant", "连接失败，请检查 AI 设置或稍后重试。");
+  }
+
+  renderAiChat();
+}
+
+aiChatSend?.addEventListener("click", () => {
+  handleAiChatSend();
+});
+
+aiChatInput?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    handleAiChatSend();
+  }
 });
 
 categoryRulesList.addEventListener("click", (event) => {
@@ -1336,10 +1488,12 @@ clearBtn.addEventListener("click", () => {
 function init() {
   loadCategoryRules();
   loadAiSettings();
+  loadAiChatHistory();
   loadEntries();
   listCollapsed = localStorage.getItem(LIST_COLLAPSE_KEY) === "1";
   applyListCollapse();
   fillAiSettingsForm();
+  renderAiChat();
   renderEntries();
   renderSummary();
 }
